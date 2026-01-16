@@ -7,50 +7,110 @@ import pickle
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
-# Setup Logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
 # Load .env file immediately (if present) to populate os.environ
 load_dotenv()
 
-# --- Constants ---
+# ====== Configuration ======
+CONFIG_DIR = os.environ.get('CONFIG_DIR', os.path.dirname(os.path.abspath(__file__)))
+LOG_FILE = os.environ.get('LOG_FILE', os.path.join(CONFIG_DIR, 'agent.log'))
+
+# Ensure config directory exists
+os.makedirs(CONFIG_DIR, exist_ok=True)
+
+# Setup Logging with file handler
+def setup_logger(logger_name='TJUEcardAgent'):
+    """
+    Configure and return logger with file output
+    
+    :param logger_name: Logger name
+    :return: Configured logger
+    """
+    logger = logging.getLogger(logger_name)
+    logger.setLevel(logging.INFO)
+    
+    # Avoid duplicate handlers
+    if not logger.handlers:
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        console_handler.setFormatter(console_formatter)
+        logger.addHandler(console_handler)
+        
+        # File handler with UTF-8 encoding
+        try:
+            file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+            file_formatter = logging.Formatter(
+                '%(asctime)s - %(levelname)s - %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            )
+            file_handler.setFormatter(file_formatter)
+            logger.addHandler(file_handler)
+            logger.info(f"Logging to file: {LOG_FILE}")
+        except PermissionError:
+            logger.error(f"Permission denied: Unable to create log file at '{LOG_FILE}'")
+        except Exception as e:
+            logger.error(f"Failed to setup file logging: {e}")
+    
+    return logger
+
+logger = setup_logger()
+
+# ====== Constants ======
 BASE_DOMAIN = "http://59.67.37.10:8180"  # Equivalent to https://ecard.tju.edu.cn
 LOGIN_PAGE_URL = f"{BASE_DOMAIN}/epay/person/index"
 LOGIN_URL = f"{BASE_DOMAIN}/epay/j_spring_security_check"
 QUERY_URL = f"{BASE_DOMAIN}/epay/electric/queryelectricbill"
 LOAD_BILL_URL = f"{BASE_DOMAIN}/epay/electric/load4electricbill"
-VERIFY_LOGIN_URL = f"{BASE_DOMAIN}/epay/person/index" # Same as LOGIN_PAGE_URL
-COOKIE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "agent_cookies.pkl")
+VERIFY_LOGIN_URL = f"{BASE_DOMAIN}/epay/person/index"  # Same as LOGIN_PAGE_URL
+COOKIE_FILE = os.path.join(CONFIG_DIR, "cookies.pkl")
 
-# --- Utility Functions ---
+# ====== Utility Functions ======
 
-def save_cookies(session: requests.Session, file_name: str) -> None:
+def save_cookies(session: requests.Session, username: str, file_name: str) -> None:
     """
-    Save session cookies to file
+    Save session cookies to file for a specific user.
+    Updates existing file content to prevent overwriting other users.
     
     :param session: Request session object
+    :param username: Username associated with the cookies
     :param file_name: File name to save to
     """
-    with open(file_name, 'wb') as file:
-        pickle.dump(session.cookies, file)
-    logger.info(f"New session saved to {file_name}")
+    try:
+        # Load existing data
+        data = {}
+        if os.path.exists(file_name):
+            try:
+                with open(file_name, 'rb') as file:
+                    data = pickle.load(file)
+            except Exception as e:
+                logger.warning(f"Failed to load existing cookies, creating new: {e}")
+        
+        # Update user cookies
+        data[username] = session.cookies
+        
+        # Save back
+        with open(file_name, 'wb') as file:
+            pickle.dump(data, file)
+        logger.info(f"Cookies saved for user {username}")
+    except Exception as e:
+        logger.error(f"Failed to save cookies: {e}")
 
 
-def load_cookies(session: requests.Session, file_name: str) -> bool:
+def load_cookies_dict(file_name: str) -> dict:
     """
-    Load cookies from file to session
+    Load all cookies from file
     
-    :param session: Request session object
     :param file_name: File name to load from
-    :return: Whether loading was successful
+    :return: Dictionary of {username: cookies}
     """
     if not os.path.exists(file_name):
-        return False
-    with open(file_name, 'rb') as file:
-        session.cookies.update(pickle.load(file))
-    logger.info("Session loaded from local file")
-    return True
+        return {}
+    try:
+        with open(file_name, 'rb') as file:
+            return pickle.load(file)
+    except Exception as e:
+        logger.error(f"Failed to load cookies: {e}")
+        return {}
 
 
 def extract_csrf_token(html_content: str) -> str | None:
@@ -92,7 +152,7 @@ def load_config(path=None):
     return config
 
 
-# --- Core Query Functions ---
+# ====== Core Query Functions ======
 
 def perform_auto_login(session: requests.Session, username: str, password: str) -> bool:
     """
@@ -144,7 +204,7 @@ def handle_relogin(session: requests.Session, username: str, password: str) -> b
     logger.info("Starting reconnection logic")
     
     if perform_auto_login(session, username, password):
-        save_cookies(session, COOKIE_FILE)
+        save_cookies(session, username, COOKIE_FILE)
         logger.info("Reconnection successful and new session saved")
         return True
     else:
@@ -274,42 +334,69 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
     return {'success': False, 'message': 'Query failed after retries'}
 
 
-# --- Agent Class ---
+# ====== Agent Class ======
 
 class Agent:
     def __init__(self, config):
         self.base_url = config['api_base_url']
         self.secret = config['agent_secret']
         self.accounts = config['accounts']
-        self.session = None
-        self.current_account = None
+        self.sessions = []  # List of dicts: {'session': s, 'username': u, 'password': p}
+        self.current_session_index = 0
         
-    def init_session(self):
-        """Initialize session with first available account"""
+    def init_sessions(self):
+        """Initialize sessions for all configured accounts"""
         if not self.accounts:
             logger.error("No accounts configured")
-            return False
+            return
             
-        # Use first account for now (can be extended to support multiple accounts)
-        self.current_account = self.accounts[0]
+        # Load all saved cookies
+        all_cookies = load_cookies_dict(COOKIE_FILE)
         
-        self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-            "X-Requested-With": "XMLHttpRequest",
-        })
-        
-        is_session_valid = False
-        if load_cookies(self.session, COOKIE_FILE):
-            logger.info("Loaded cookies from file, validating session")
-            is_session_valid = verify_session(self.session)
-        
-        if not is_session_valid:
-            logger.info("Session invalid or does not exist, attempting automatic login")
-            if handle_relogin(self.session, self.current_account['username'], self.current_account['password']):
-                is_session_valid = True
-        
-        return is_session_valid
+        for acc in self.accounts:
+            username = acc['username']
+            password = acc['password']
+            
+            session = requests.Session()
+            session.headers.update({
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+                "X-Requested-With": "XMLHttpRequest",
+            })
+            
+            # Load cookies for this specific user if they exist
+            if username in all_cookies:
+                session.cookies.update(all_cookies[username])
+                logger.info(f"Loaded saved cookies for user {username}")
+                
+            # Validate session
+            if verify_session(session):
+                logger.info(f"Session valid for user {username}")
+            else:
+                logger.info(f"Session expired or missing for user {username}, attempting login")
+                if perform_auto_login(session, username, password):
+                    save_cookies(session, username, COOKIE_FILE)
+                    logger.info(f"Login successful for user {username}")
+                else:
+                    logger.error(f"Login failed for user {username}, skipping")
+                    continue
+            
+            self.sessions.append({
+                'session': session,
+                'username': username,
+                'password': password
+            })
+            
+        logger.info(f"Initialized {len(self.sessions)} valid sessions")
+
+    def get_next_session(self):
+        """Get next session in round-robin fashion"""
+        if not self.sessions:
+            return None
+            
+        entry = self.sessions[self.current_session_index]
+        # Move index to next, wrap around
+        self.current_session_index = (self.current_session_index + 1) % len(self.sessions)
+        return entry
         
     def poll(self):
         """Poll server for tasks"""
@@ -342,8 +429,11 @@ class Agent:
         """Main agent loop"""
         logger.info("Agent started")
         
-        if not self.init_session():
-            logger.error("Failed to initialize session, exiting")
+        if not self.sessions:
+            self.init_sessions()
+            
+        if not self.sessions:
+            logger.error("No valid sessions initialized, exiting")
             return
         
         while True:
@@ -358,12 +448,20 @@ class Agent:
             for task in tasks:
                 logger.info(f"Processing Room {task['id']} ({task['room_id']})")
                 
+                # Get account for this task (Round-Robin)
+                account_entry = self.get_next_session()
+                if not account_entry:
+                    logger.error("No active sessions available to process task")
+                    continue
+                    
+                logger.info(f"Using account: {account_entry['username']}")
+                
                 # Execute Query using core query function
                 result = query_electricity(
-                    self.session, 
+                    account_entry['session'], 
                     task, 
-                    self.current_account['username'], 
-                    self.current_account['password']
+                    account_entry['username'], 
+                    account_entry['password']
                 )
                 
                 self.submit(
