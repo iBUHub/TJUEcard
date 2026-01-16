@@ -1,9 +1,9 @@
 import axios from 'axios';
 import router from './router';
 
-// eslint-disable-next-line
+// Use environment variable in production, proxy in development
 const api = axios.create({
-    baseURL: '/api', // Proxy handles this
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
 });
 
 api.interceptors.request.use(config => {
