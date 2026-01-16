@@ -158,7 +158,7 @@ We welcome all forms of contributions! If you have good ideas or needs, feel fre
 
 - **Submit a Pull Request:** If you have fixed a bug or implemented a new feature, feel free to submit a PR.
 - **Create an Issue:** If you have any suggestions or find a problem, please discuss it on the [GitHub Issues](https://github.com/iBUHub/TJUEcard/issues) page.
-- **Participate in Development:** If you are interested in the development of the project, please contact us by email: [headfirstbug@gmail.com](mailto:headfirstbug@gmail.com).
+- **Participate in Development:** If you are interested in the development of the project, please contact us by email: [hello@ibuhub.com](mailto:hello@ibuhub.com).
 
 ## 📋 To-Do
 
