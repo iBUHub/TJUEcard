@@ -47,6 +47,24 @@ const loading = ref(false);
 const handleLogin = async () => {
   loading.value = true;
   try {
+    // Dev environment test account bypass
+    if (
+      import.meta.env.DEV &&
+      form.value.email === "test" &&
+      form.value.password === "123456"
+    ) {
+      // Mock token and user for dev environment
+      const mockToken = "dev-test-token-" + Date.now();
+      const mockUser = { id: 0, email: "test@dev.local" };
+
+      localStorage.setItem("token", mockToken);
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      ElMessage.success("Login success (Dev Mode)");
+      router.push("/");
+      return;
+    }
+
+    // Normal login flow
     const res = await api.post("/auth/login", form.value);
     localStorage.setItem("token", res.data.token); // Note: data.token, axios wraps result in data
     localStorage.setItem("user", JSON.stringify(res.data.user));
