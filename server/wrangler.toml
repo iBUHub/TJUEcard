@@ -1,11 +1,26 @@
 name = "tjuecard-server"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-01-17"
 main = "src/index.ts"
 
 [vars]
-# AGENT_SECRET will be set in environment variables (wrangler secret put AGENT_SECRET)
+# AGENT_SECRET will be set in environment variables (wrangler secret put AGENT_SECRET and JWT_SECRET)
 
-[[d1_databases]]
-binding = "DB"
-database_name = "tjuecard-db"
-database_id = "to-be-replaced-after-creation"
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "tjuecard_app_db"
+# database_id = "ca92ea53-b0e7-4dc5-a7e3-944e53b7ae42"
+
+[observability]
+enabled = false
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1

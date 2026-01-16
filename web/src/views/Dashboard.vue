@@ -308,7 +308,7 @@ const fetchRooms = async () => {
         const res = await api.get('/rooms');
         rooms.value = res.data;
     } catch {
-        ElMessage.error('加载订阅失败（后端可能离线）');
+        ElMessage.error('加载订阅失败（无法连接服务器）');
     } finally {
         loading.value = false;
     }

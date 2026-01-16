@@ -32,11 +32,11 @@ app.post("/", async c => {
     try {
         await c.env.DB.prepare(
             `
-         INSERT OR IGNORE INTO rooms (system_id, area_id, building_id, floor_id, room_id, full_name)
-         VALUES (?, ?, ?, ?, ?, ?)
+         INSERT OR IGNORE INTO rooms (system_id, area_id, building_id, floor_id, room_id)
+         VALUES (?, ?, ?, ?, ?)
        `
         )
-            .bind(system_id, area_id, building_id, floor_id, room_id, alias_name)
+            .bind(system_id, area_id, building_id, floor_id, room_id)
             .run();
     } catch (e) {
         console.error("Room insert error", e);

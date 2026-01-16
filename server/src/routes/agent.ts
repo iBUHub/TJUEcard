@@ -20,9 +20,10 @@ app.post("/poll", async c => {
     // eslint-disable-next-line
     const pending = await c.env.DB.prepare(
         `
-        SELECT * FROM rooms 
+        SELECT * FROM rooms r
         WHERE (next_query_time < ?) 
           AND (lock_agent_id IS NULL OR lock_expires_at < ?)
+          AND EXISTS (SELECT 1 FROM subscriptions s WHERE s.room_id = r.id AND s.is_active = 1)
         ORDER BY next_query_time ASC
         LIMIT ?
     `
@@ -59,8 +60,9 @@ app.post("/submit", async c => {
 
     const nextTime = now + 86400; // 24 hours later
 
-    await c.env.DB.prepare(
-        `
+    const batch = [
+        c.env.DB.prepare(
+            `
         UPDATE rooms 
         SET 
             last_query_time = ?,
@@ -71,9 +73,27 @@ app.post("/submit", async c => {
             lock_agent_id = NULL
         WHERE id = ?
     `
-    )
-        .bind(now, success ? "success" : "failed", electricity, message, nextTime, room_id)
-        .run();
+        ).bind(now, success ? "success" : "failed", electricity, message, nextTime, room_id),
+    ];
+
+    if (success && electricity !== null) {
+        batch.push(
+            c.env.DB.prepare(
+                "INSERT INTO readings (room_id, electricity, recorded_at) VALUES (?, ?, datetime(?, 'unixepoch'))"
+            ).bind(room_id, electricity, now)
+        );
+
+        // 30 days retention
+        const thirtyDaysAgo = now - 2592000;
+        batch.push(
+            c.env.DB.prepare("DELETE FROM readings WHERE room_id = ? AND recorded_at < datetime(?, 'unixepoch')").bind(
+                room_id,
+                thirtyDaysAgo
+            )
+        );
+    }
+
+    await c.env.DB.batch(batch);
 
     if (success && electricity !== null) {
         c.executionCtx.waitUntil(checkAndNotify(c.env, room_id, electricity));
@@ -85,7 +105,7 @@ app.post("/submit", async c => {
 async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
     const subs = await env.DB.prepare(
         `
-        SELECT u.email, s.notification_threshold 
+        SELECT u.email, s.notification_threshold, s.last_notified_at, s.user_id
         FROM subscriptions s
         JOIN users u ON s.user_id = u.id
         WHERE s.room_id = ? AND s.is_active = 1 AND s.notification_threshold != -1
@@ -93,15 +113,32 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
     )
 
         .bind(roomId)
-        .all<{ email: string; notification_threshold: number }>();
+        .all<{ email: string; notification_threshold: number; last_notified_at: number | null; user_id: number }>();
+
+    const now = Math.floor(Date.now() / 1000);
+    const COOLDOWN = 86400; // 24 hours in seconds
 
     for (const sub of subs.results) {
-        if (electric < sub.notification_threshold) {
+        let shouldNotify = false;
+
+        if (!sub.last_notified_at) {
+            shouldNotify = true;
+        } else {
+            const last = sub.last_notified_at; // It's a number now
+            if (now - last > COOLDOWN) shouldNotify = true;
+        }
+
+        if (electric < sub.notification_threshold && shouldNotify) {
             // Stub for email sending
             // In production: await fetch('https://api.mailchannels.net/tx/v1/send', ...)
             console.log(
                 `[Email Alert] To: ${sub.email} | Room ID: ${roomId} | Level: ${electric} < ${sub.notification_threshold}`
             );
+
+            // Update last_notified_at
+            await env.DB.prepare("UPDATE subscriptions SET last_notified_at = ? WHERE user_id = ? AND room_id = ?")
+                .bind(now, sub.user_id, roomId)
+                .run();
         }
     }
 }

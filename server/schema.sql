@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     alias_name TEXT, 
     is_active BOOLEAN DEFAULT 1,
     notification_threshold FLOAT DEFAULT -1,
+    last_notified_at TIMESTAMP,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -51,3 +52,15 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     FOREIGN KEY (room_id) REFERENCES rooms(id),
     UNIQUE(user_id, room_id)
 );
+
+-- 4. Electricity History Readings
+CREATE TABLE IF NOT EXISTS readings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id INTEGER NOT NULL,
+    electricity FLOAT NOT NULL,
+    recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (room_id) REFERENCES rooms(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_readings_room_time ON readings(room_id, recorded_at);
