@@ -1,19 +1,23 @@
 <template>
     <el-container class="layout-container">
-        <el-header>
+        <el-header class="dashboard-header">
             <div style="display: flex; justify-content: space-between; align-items: center; height: 100%">
-                <h3>TJUEcard Dashboard</h3>
-                <el-button @click="logout">Logout</el-button>
+                <h3 class="header-title">TJUEcard 仪表盘</h3>
+                <el-button class="logout-btn" @click="logout">退出登录</el-button>
             </div>
         </el-header>
         <el-main>
             <div class="actions">
-                <el-button type="primary" @click="showAddDialog = true">Add Room</el-button>
+                <el-button type="primary" class="add-room-btn" @click="showAddDialog = true">添加房间</el-button>
             </div>
 
-            <el-table v-loading="loading" :data="rooms" style="width: 100%; margin-top: 20px">
-                <el-table-column prop="alias_name" label="Name" />
-                <el-table-column label="Status">
+            <el-table v-loading="loading" :data="rooms" class="rooms-table" stripe>
+                <el-table-column prop="alias_name" label="名称">
+                    <template #default="scope">
+                        {{ spacingText(scope.row.alias_name) }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="状态">
                     <template #default="scope">
                         <el-tag
                             :type="
@@ -24,58 +28,69 @@
                                       : 'info'
                             "
                         >
-                            {{ scope.row.last_query_status }}
+                            {{
+                                scope.row.last_query_status === 'success'
+                                    ? '成功'
+                                    : scope.row.last_query_status === 'failed'
+                                      ? '失败'
+                                      : '等待中'
+                            }}
                         </el-tag>
                     </template>
                 </el-table-column>
-                <el-table-column prop="last_electricity" label="Electricity (kWh)">
+                <el-table-column prop="last_electricity" label="电量 (kWh)">
                     <template #default="scope">
                         {{ scope.row.last_electricity ?? '-' }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="notification_threshold" label="Threshold" />
-                <el-table-column label="Actions">
+                <el-table-column prop="notification_threshold" label="阈值" />
+                <el-table-column label="操作">
                     <template #default="scope">
-                        <el-button type="danger" size="small" @click="deleteRoom(scope.row.room_id)">Delete</el-button>
+                        <el-button type="danger" size="small" @click="deleteRoom(scope.row.room_id)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
 
             <!-- Add Room Dialog -->
-            <el-dialog v-model="showAddDialog" title="Add Room" width="600px">
+            <el-dialog v-model="showAddDialog" title="添加房间" width="600px">
                 <el-form label-width="100px">
-                    <el-form-item label="System">
+                    <el-form-item label="系统">
                         <el-select
                             v-model="selectedSystemId"
-                            placeholder="Select System"
+                            placeholder="选择系统"
                             style="width: 100%"
                             @change="onSystemChange"
                         >
                             <el-option
                                 v-for="item in systemOptions"
                                 :key="item.id"
-                                :label="item.name"
+                                :label="spacingText(item.name)"
                                 :value="item.id"
                             />
                         </el-select>
                     </el-form-item>
 
-                    <el-form-item label="Area">
+                    <el-form-item label="区域">
                         <el-select
                             v-model="selectedAreaId"
-                            placeholder="Select Area"
+                            placeholder="选择区域"
                             :disabled="!selectedSystemId"
                             style="width: 100%"
                             @change="onAreaChange"
                         >
-                            <el-option v-for="item in areaOptions" :key="item.id" :label="item.name" :value="item.id" />
+                            <el-option
+                                v-for="item in areaOptions"
+                                :key="item.id"
+                                :label="spacingText(item.name)"
+                                :value="item.id"
+                            />
                         </el-select>
                     </el-form-item>
 
-                    <el-form-item label="District">
+                    <el-form-item label="片区">
                         <el-select
                             v-model="selectedDistrictId"
-                            placeholder="Select District"
+                            placeholder="选择片区"
                             :disabled="!selectedAreaId"
                             style="width: 100%"
                             @change="onDistrictChange"
@@ -83,16 +98,16 @@
                             <el-option
                                 v-for="item in districtOptions"
                                 :key="item.id"
-                                :label="item.name"
+                                :label="spacingText(item.name)"
                                 :value="item.id"
                             />
                         </el-select>
                     </el-form-item>
 
-                    <el-form-item label="Building">
+                    <el-form-item label="楼栋">
                         <el-select
                             v-model="selectedBuildingId"
-                            placeholder="Select Building"
+                            placeholder="选择楼栋"
                             :disabled="!selectedDistrictId"
                             style="width: 100%"
                             @change="onBuildingChange"
@@ -100,16 +115,16 @@
                             <el-option
                                 v-for="item in buildingOptions"
                                 :key="item.id"
-                                :label="item.name"
+                                :label="spacingText(item.name)"
                                 :value="item.id"
                             />
                         </el-select>
                     </el-form-item>
 
-                    <el-form-item label="Floor">
+                    <el-form-item label="楼层">
                         <el-select
                             v-model="selectedFloorId"
-                            placeholder="Select Floor"
+                            placeholder="选择楼层"
                             :disabled="!selectedBuildingId"
                             style="width: 100%"
                             @change="onFloorChange"
@@ -117,48 +132,53 @@
                             <el-option
                                 v-for="item in floorOptions"
                                 :key="item.id"
-                                :label="item.name"
+                                :label="spacingText(item.name)"
                                 :value="item.id"
                             />
                         </el-select>
                     </el-form-item>
 
-                    <el-form-item label="Room">
+                    <el-form-item label="房间">
                         <el-select
                             v-model="selectedRoomId"
-                            placeholder="Select Room"
+                            placeholder="选择房间"
                             :disabled="!selectedFloorId"
                             style="width: 100%"
                             @change="onRoomChange"
                         >
-                            <el-option v-for="item in roomOptions" :key="item.id" :label="item.name" :value="item.id" />
+                            <el-option
+                                v-for="item in roomOptions"
+                                :key="item.id"
+                                :label="spacingText(item.name)"
+                                :value="item.id"
+                            />
                         </el-select>
                     </el-form-item>
 
                     <el-divider />
 
-                    <el-form-item label="Alias Name">
+                    <el-form-item label="别名">
                         <el-input
                             v-model="addForm.alias_name"
-                            placeholder="e.g. My Dorm (Defaults to room name)"
+                            placeholder="例如：我的宿舍（默认为房间名称）"
                         ></el-input>
                     </el-form-item>
-                    <el-form-item label="Threshold">
+                    <el-form-item label="阈值">
                         <el-input-number v-model="addForm.notification_threshold" :min="-1" :step="1"></el-input-number>
                         <div style="font-size: 12px; color: #999; line-height: 1.2; margin-top: 5px">
-                            Email alert when electricity is below this value. Set -1 to disable.
+                            电量低于此值时发送邮件提醒。设置 -1 禁用。
                         </div>
                     </el-form-item>
                 </el-form>
                 <template #footer>
                     <span class="dialog-footer">
-                        <el-button @click="showAddDialog = false">Cancel</el-button>
+                        <el-button @click="showAddDialog = false">取消</el-button>
                         <el-button
                             type="primary"
                             :loading="submitLoading"
                             :disabled="!selectedRoomId"
                             @click="submitAddRoom"
-                            >Confirm</el-button
+                            >确认</el-button
                         >
                     </span>
                 </template>
@@ -173,6 +193,7 @@ import api from '../api';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
+import { spacingText } from '../utils/pangu';
 
 const router = useRouter();
 const rooms = ref([]);
@@ -287,7 +308,7 @@ const fetchRooms = async () => {
         const res = await api.get('/rooms');
         rooms.value = res.data;
     } catch {
-        ElMessage.error('Failed to load subscriptions (Backend may be offline)');
+        ElMessage.error('加载订阅失败（后端可能离线）');
     } finally {
         loading.value = false;
     }
@@ -296,48 +317,30 @@ const fetchRooms = async () => {
 const submitAddRoom = async () => {
     submitLoading.value = true;
     try {
-        // Need to include district_id?
-        // The backend `rooms.ts` expects: { system_id, area_id, building_id, floor_id, room_id, alias_name... }
-        // It does NOT invoke the proxy to fetch district.
-        // However, the `rooms` table in schema.sql DOES NOT store district_id.
-        // Wait, schema: CREATE TABLE rooms ( system_id, area_id, building_id, floor_id, room_id ... )
-        // Where does District go?
-        // In `tjuecard_main.py` query payload: 'elcarea': selection["area"]["id"], 'elcbuis': selection["buis"]["id"]...
-        // The "district" seems to be an intermediate level in the scraper but maybe not needed for the final query?
-        // Let's check `fetch_options` usage in `setup.py`.
-        // fetch_options('buis', payload={'sysid', 'area': AREA, 'district': DISTRICT})
-        // So to get the list of buildings, you need district.
-        // But to QUERY the bill, the payload is:
-        // 'elcarea': area, 'elcbuis': buis, 'roomNo': room
-        // It seems district ID is NOT sent in the final query!
-
-        // So `rooms.ts` backend also doesn't store district_id.
-        // This confirms we don't need to save district_id in DB.
-
         await api.post('/rooms', addForm.value);
-        ElMessage.success('Room added');
+        ElMessage.success('房间已添加');
         showAddDialog.value = false;
         fetchRooms();
     } catch (e) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ElMessage.error((e as any).response?.data?.error || 'Failed to add room');
+        ElMessage.error((e as any).response?.data?.error || '添加房间失败');
     } finally {
         submitLoading.value = false;
     }
 };
 
 const deleteRoom = (id: string) => {
-    ElMessageBox.confirm('Are you sure to unsubscribe?', 'Warning', {
-        cancelButtonText: 'Cancel',
-        confirmButtonText: 'Yes',
+    ElMessageBox.confirm('确定要取消订阅吗？', '警告', {
+        cancelButtonText: '取消',
+        confirmButtonText: '确定',
         type: 'warning',
     }).then(async () => {
         try {
             await api.delete(`/rooms/${id}`);
-            ElMessage.success('Deleted');
+            ElMessage.success('已删除');
             fetchRooms();
         } catch {
-            ElMessage.error('Delete failed');
+            ElMessage.error('删除失败');
         }
     });
 };
@@ -356,12 +359,73 @@ onMounted(() => {
 <style scoped>
 .layout-container {
     height: 100vh;
+    background: linear-gradient(to bottom, #f5f7fa 0%, #e8ecf1 100%);
 }
-.el-header {
-    background-color: #fff;
-    border-bottom: 1px solid #dcdfe6;
+
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+
+.header-title {
+    color: #fff;
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.logout-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
 .actions {
     margin-bottom: 20px;
+}
+
+.add-room-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s ease;
+}
+
+.add-room-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+}
+
+.rooms-table {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+:deep(.rooms-table .el-table__header-wrapper) {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+}
+
+:deep(.rooms-table .el-table__row:hover) {
+    background-color: #f5f7fa;
+}
+
+:deep(.el-dialog) {
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.el-dialog__title) {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 18px;
 }
 </style>
