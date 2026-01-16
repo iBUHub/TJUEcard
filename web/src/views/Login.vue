@@ -3,7 +3,7 @@
         <el-card class="box-card">
             <template #header>
                 <div class="card-header">
-                    <span>TJUEcard 电量检测</span>
+                    <span>TJUEcard 电量监控</span>
                 </div>
             </template>
             <el-form :model="form" class="login-form">
@@ -49,7 +49,7 @@ const handleLogin = async () => {
             password,
         });
 
-        if (import.meta.env.DEV && email === 'test' && password === '123456') {
+        if (import.meta.env.DEV && email === 'test' && password === '1234567') {
             // Mock token and user for dev environment
             const mockToken = 'dev-test-token-' + Date.now();
             const mockUser = { email: 'test@dev.local', id: 0 };
