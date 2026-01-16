@@ -29,37 +29,37 @@
     <img
       src="https://img.shields.io/badge/PyInstaller-33AD53?style=flat&logo=data:image/png;base64,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&labelColor=grey" /></a>
 
-  <a href="https://deepwiki.com/bbbugg/TJUEcard">
+  <a href="https://deepwiki.com/iBUHub/TJUEcard">
     <img
       src="https://img.shields.io/badge/Ask%20DeepWiki-AAB93E?logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAC4AAAAyCAYAAAAjrenXAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACZUlEQVRoge2Yz0sbQRTH32yM4F1LrxsEBS9ejE0PXfEfKQiuCiL+McHg4sl/pKwIS0MvPfVSkh5b9aqCJjNeMjIZ3+zOz4TYfG+zM3nvM29nvjNZgLkmKxIiaOuoy8R20Wl6z+M14Oej7i0DWFb1+5yAt0BylVWiz/Tj94tP/1zzRa4BAPShAQCievTXR04v4NPQHHzSmlnwhbJOHT822Zg6ivPsNV4/SZWuh3a00h/rUKO/sD4R3hYaK4AILAF+6yXpLvJ8XL4riEkEVwHLkqs/1ggNLVdaF5qrRhY+/P6ydwtQscZtYACQAhD2tTjbvnTNNWSDGxgV2wm86GyhrlR0moTDh7hgAThXnChfdShgrpn18WDgcZ6xss1nujFlOW9OWTIQb4t2tnqdbQyHbnm8gcd5Nqjof52QLbQ4easDSOHHHKdmh1Wu0gNIlGICtOg034DZrlcRJs7PzwFIWjZGVKVl6fixDbgKCNsTmLx4rSl4FZSO3q+PR+0ei9q9YHdupO8hzrOHqhjKV4bBUgqbcNL4aQKiEmPk4M/OfobEeRw1lwAMNqdOdelxw+l6aqNSOzRdEuIEJg3vDZxLNYFxz86eAKBukkuO491V+klK5NeKtBdd83i/ZHFVeXU/SYnL8nq/Pm4dOID/j8V3+rECTHweCt55jeuA8TGYC+mLJmLL6gBylZ3/06SfHF7xFlqBqN0bgOIPAa0/r8DB2t1onNUkTfwfAHeo0lcng2EJbeBVS0aGN/7oaSofJ65xTtcA09IcfNL6z8EZOTUYfe8jpdcvqlXu4sNNuIJ8Ctbx/7lmTS9Deh+ig+4uuAAAAABJRU5ErkJggg==&labelColor=grey" /></a><br />
 
-  <a href="https://github.com/bbbugg/TJUEcard/stargazers">
+  <a href="https://github.com/iBUHub/TJUEcard/stargazers">
     <img
-      src="https://img.shields.io/github/stars/bbbugg/TJUEcard?style=flat&logo=github&logoColor=FF0000&color=FF0000&labelColor=grey" /></a>
+      src="https://img.shields.io/github/stars/iBUHub/TJUEcard?style=flat&logo=github&logoColor=FF0000&color=FF0000&labelColor=grey" /></a>
 
-  <a href="https://github.com/bbbugg/TJUEcard/network/members">
+  <a href="https://github.com/iBUHub/TJUEcard/network/members">
     <img
-      src="https://img.shields.io/github/forks/bbbugg/TJUEcard?style=flat&logo=github&logoColor=orange&color=orange&labelColor=grey" /></a>
+      src="https://img.shields.io/github/forks/iBUHub/TJUEcard?style=flat&logo=github&logoColor=orange&color=orange&labelColor=grey" /></a>
 
-  <a href="https://github.com/bbbugg/TJUEcard/issues">
+  <a href="https://github.com/iBUHub/TJUEcard/issues">
     <img
-      src="https://img.shields.io/github/issues/bbbugg/TJUEcard?style=flat&logo=github&logoColor=yellow&color=yellow&labelColor=grey" /></a>
+      src="https://img.shields.io/github/issues/iBUHub/TJUEcard?style=flat&logo=github&logoColor=yellow&color=yellow&labelColor=grey" /></a>
 
-  <a href="https://github.com/bbbugg/TJUEcard/pulls">
+  <a href="https://github.com/iBUHub/TJUEcard/pulls">
     <img
-      src="https://img.shields.io/github/issues-pr/bbbugg/TJUEcard?style=flat&logo=github&logoColor=green&color=green&labelColor=grey" /></a>
+      src="https://img.shields.io/github/issues-pr/iBUHub/TJUEcard?style=flat&logo=github&logoColor=green&color=green&labelColor=grey" /></a>
 
-  <a href="https://github.com/bbbugg/TJUEcard/graphs/contributors">
+  <a href="https://github.com/iBUHub/TJUEcard/graphs/contributors">
     <img
-      src="https://img.shields.io/github/contributors/bbbugg/TJUEcard?style=flat&logo=github&logoColor=49C7C0&color=49C7C0&labelColor=grey" /></a>
+      src="https://img.shields.io/github/contributors/iBUHub/TJUEcard?style=flat&logo=github&logoColor=49C7C0&color=49C7C0&labelColor=grey" /></a>
 
-  <a href="https://github.com/bbbugg/TJUEcard/releases">
+  <a href="https://github.com/iBUHub/TJUEcard/releases">
     <img
-      src="https://img.shields.io/github/v/release/bbbugg/TJUEcard?style=flat&logo=github&logoColor=blue&color=blue&labelColor=grey" /></a>
+      src="https://img.shields.io/github/v/release/iBUHub/TJUEcard?style=flat&logo=github&logoColor=blue&color=blue&labelColor=grey" /></a>
 
-  <a href="https://github.com/bbbugg/TJUEcard/releases/latest">
+  <a href="https://github.com/iBUHub/TJUEcard/releases/latest">
     <img
-      src="https://img.shields.io/github/downloads/bbbugg/TJUEcard/total?style=flat&logo=github&logoColor=EE82EE&color=EE82EE&labelColor=grey" /></a>
+      src="https://img.shields.io/github/downloads/iBUHub/TJUEcard/total?style=flat&logo=github&logoColor=EE82EE&color=EE82EE&labelColor=grey" /></a>
 </p>
 
 <div align="justify">
@@ -113,7 +113,7 @@
 
 > 💡 提醒 **Windows 用户** 如需配置定时任务，请右键点击以 **管理员身份** 运行 `TJUEcardSetup.exe`，请放心，这并不会带来安全问题，使用管理员权限的唯一目的在于让定时任务在锁屏时也能正常运行。
 >
-> ❓ 如果你不确定一卡通的账号密码，请『[验证或找回](https://github.com/bbbugg/TJUEcard/issues/3)』。
+> ❓ 如果你不确定一卡通的账号密码，请『[验证或找回](https://github.com/iBUHub/TJUEcard/issues/3)』。
 
 运行 TJUEcardSetup 时，程序会引导您进行配置，包括设置 **一卡通用户名**、**一卡通密码**，以及用于接收邮件的邮箱和授权码。
 
@@ -137,7 +137,7 @@
 
 **Q：定时任务被安装到哪里了？如何管理定时任务？**
 
-A：请您查看文档『[定时任务管理](https://github.com/bbbugg/TJUEcard/issues/4)』，按照说明来进行高级操作。
+A：请您查看文档『[定时任务管理](https://github.com/iBUHub/TJUEcard/issues/4)』，按照说明来进行高级操作。
 
 **Q：程序会一直在后台运行吗？**
 
@@ -145,7 +145,7 @@ A：不会。程序只会在定时任务触发时自动运行，平时不会常�
 
 **Q：定时任务不执行怎么办？**
 
-A：如果你是 Windows 或 Linux 用户，请检查『[定时任务管理](https://github.com/bbbugg/TJUEcard/issues/4)』以及 `TJUEcard.log` 日志文件。如果你是 macOS 用户，请使用 mail 命令查看 cron 投递的日志。
+A：如果你是 Windows 或 Linux 用户，请检查『[定时任务管理](https://github.com/iBUHub/TJUEcard/issues/4)』以及 `TJUEcard.log` 日志文件。如果你是 macOS 用户，请使用 mail 命令查看 cron 投递的日志。
 
 **Q：为什么我没收到邮件？**
 
@@ -153,14 +153,14 @@ A：请检查您的邮箱配置是否正确，或者看看邮件是否被投递�
 
 **Q：程序运行有问题怎么办？**
 
-A：请您新建 [GitHub Issues](https://github.com/bbbugg/TJUEcard/issues/new) 描述您的问题，并附上详细的错误信息。
+A：请您新建 [GitHub Issues](https://github.com/iBUHub/TJUEcard/issues/new) 描述您的问题，并附上详细的错误信息。
 
 ## 🤝 贡献
 
 我们欢迎任何形式的贡献！如果您有好的想法或需求，欢迎通过以下方式参与项目：
 
 - **提交 Pull Request**：如果您修复了 bug 或实现了新功能，欢迎提交 PR。
-- **创建 Issue**：如果您有任何建议或发现了问题，请在 [GitHub Issue](https://github.com/bbbugg/TJUEcard/issues) 页面进行讨论。
+- **创建 Issue**：如果您有任何建议或发现了问题，请在 [GitHub Issue](https://github.com/iBUHub/TJUEcard/issues) 页面进行讨论。
 - **参与开发**：如果您对项目的开发感兴趣，欢迎通过邮件联系我们：[headfirstbug@gmail.com](mailto:headfirstbug@gmail.com)。
 
 ## 📋 待办事项
