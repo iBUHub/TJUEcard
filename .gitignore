@@ -1,5 +1,6 @@
 # Node
 node_modules/
+package-lock.json
 dist/
 npm-debug.log
 
@@ -20,5 +21,4 @@ Thumbs.db
 .dev.vars
 
 # Local Config
-agent/config.yaml
 server/.sqlite/

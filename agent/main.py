@@ -1,4 +1,3 @@
-import yaml
 import time
 import requests
 import logging
@@ -10,23 +9,19 @@ logger = logging.getLogger(__name__)
 
 import os
 import json
+from dotenv import load_dotenv
 
-def load_config(path='config.yaml'):
-    config = {}
-    
-    # Load from file if exists
-    if os.path.exists(path):
-        with open(path, 'r', encoding='utf-8') as f:
-            config = yaml.safe_load(f) or {}
+# Load .env file immediately (if present) to populate os.environ
+load_dotenv()
 
-    # Override with Environment Variables
-    if os.environ.get('API_BASE_URL'):
-        config['api_base_url'] = os.environ.get('API_BASE_URL')
-    
-    if os.environ.get('AGENT_SECRET'):
-        config['agent_secret'] = os.environ.get('AGENT_SECRET')
-        
-    # Accounts can be passed as JSON string in Env
+def load_config(path=None):
+    # Only load from Environment Variables
+    config = {
+        'api_base_url': os.environ.get('API_BASE_URL', ''),
+        'agent_secret': os.environ.get('AGENT_SECRET', ''),
+        'accounts': []
+    }
+
     if os.environ.get('ACCOUNTS_JSON'):
         try:
             config['accounts'] = json.loads(os.environ.get('ACCOUNTS_JSON'))
@@ -34,9 +29,9 @@ def load_config(path='config.yaml'):
             logger.error("Failed to parse ACCOUNTS_JSON from environment")
 
     # Validate
-    if 'api_base_url' not in config:
-        logger.warning("api_base_url not set in config or env")
-    
+    if not config['api_base_url']:
+        logger.warning("API_BASE_URL is not set!")
+        
     return config
 
 class Agent:
