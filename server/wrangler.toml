@@ -1,0 +1,10 @@
+name = "tjuecard-server"
+compatibility_date = "2024-01-01"
+
+[vars]
+# AGENT_SECRET will be set in environment variables (wrangler secret put AGENT_SECRET)
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tjuecard-db"
+database_id = "to-be-replaced-after-creation"

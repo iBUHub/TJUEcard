@@ -1,11 +1,24 @@
-.idea
-.vscode
-.DS_Store
+# Node
+node_modules/
+dist/
+npm-debug.log
 
-**/*.pkl
-
-**/*.json
-
-**/*.log
-
+# Python
 __pycache__/
+*.py[cod]
+*.venv
+.venv/
+venv/
+*.env
+
+# System
+.DS_Store
+Thumbs.db
+
+# Cloudflare
+.wrangler/
+.dev.vars
+
+# Local Config
+agent/config.yaml
+server/.sqlite/
