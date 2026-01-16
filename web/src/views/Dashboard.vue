@@ -33,8 +33,8 @@
                 scope.row.last_query_status === 'success'
                   ? 'success'
                   : scope.row.last_query_status === 'failed'
-                  ? 'danger'
-                  : 'info'
+                    ? 'danger'
+                    : 'info'
               "
             >
               {{ scope.row.last_query_status }}
@@ -60,49 +60,134 @@
       </el-table>
 
       <!-- Add Room Dialog -->
-      <el-dialog v-model="showAddDialog" title="Add Room" width="500px">
-        <el-form :model="addForm" label-width="120px">
-          <el-form-item label="System ID">
-            <el-input
-              v-model="addForm.system_id"
-              placeholder="e.g. systemId"
-            ></el-input>
+      <el-dialog v-model="showAddDialog" title="Add Room" width="600px">
+        <el-form label-width="100px">
+          <el-form-item label="System">
+            <el-select
+              v-model="selectedSystemId"
+              placeholder="Select System"
+              @change="onSystemChange"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in systemOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
           </el-form-item>
-          <el-form-item label="Area ID">
-            <el-input
-              v-model="addForm.area_id"
-              placeholder="e.g. areaId"
-            ></el-input>
+
+          <el-form-item label="Area">
+            <el-select
+              v-model="selectedAreaId"
+              placeholder="Select Area"
+              @change="onAreaChange"
+              :disabled="!selectedSystemId"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in areaOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
           </el-form-item>
-          <el-form-item label="Building ID">
-            <el-input
-              v-model="addForm.building_id"
-              placeholder="e.g. buildingId"
-            ></el-input>
+
+          <el-form-item label="District">
+            <el-select
+              v-model="selectedDistrictId"
+              placeholder="Select District"
+              @change="onDistrictChange"
+              :disabled="!selectedAreaId"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in districtOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
           </el-form-item>
-          <el-form-item label="Floor ID">
-            <el-input
-              v-model="addForm.floor_id"
-              placeholder="e.g. floorId"
-            ></el-input>
+
+          <el-form-item label="Building">
+            <el-select
+              v-model="selectedBuildingId"
+              placeholder="Select Building"
+              @change="onBuildingChange"
+              :disabled="!selectedDistrictId"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in buildingOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
           </el-form-item>
-          <el-form-item label="Room ID">
-            <el-input
-              v-model="addForm.room_id"
-              placeholder="e.g. roomId"
-            ></el-input>
+
+          <el-form-item label="Floor">
+            <el-select
+              v-model="selectedFloorId"
+              placeholder="Select Floor"
+              @change="onFloorChange"
+              :disabled="!selectedBuildingId"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in floorOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
           </el-form-item>
+
+          <el-form-item label="Room">
+            <el-select
+              v-model="selectedRoomId"
+              placeholder="Select Room"
+              @change="onRoomChange"
+              :disabled="!selectedFloorId"
+              style="width: 100%"
+            >
+              <el-option
+                v-for="item in roomOptions"
+                :key="item.id"
+                :label="item.name"
+                :value="item.id"
+              />
+            </el-select>
+          </el-form-item>
+
+          <el-divider />
+
           <el-form-item label="Alias Name">
             <el-input
               v-model="addForm.alias_name"
-              placeholder="My Dorm"
+              placeholder="e.g. My Dorm (Defaults to room name)"
             ></el-input>
           </el-form-item>
           <el-form-item label="Threshold">
             <el-input-number
               v-model="addForm.notification_threshold"
               :min="-1"
+              :step="1"
             ></el-input-number>
+            <div
+              style="
+                font-size: 12px;
+                color: #999;
+                line-height: 1.2;
+                margin-top: 5px;
+              "
+            >
+              Email alert when electricity is below this value. Set -1 to
+              disable.
+            </div>
           </el-form-item>
         </el-form>
         <template #footer>
@@ -112,6 +197,7 @@
               type="primary"
               @click="submitAddRoom"
               :loading="submitLoading"
+              :disabled="!selectedRoomId"
               >Confirm</el-button
             >
           </span>
@@ -122,10 +208,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import api from "../api";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
+import axios from "axios";
 
 const router = useRouter();
 const rooms = ref([]);
@@ -143,13 +230,108 @@ const addForm = ref({
   notification_threshold: -1,
 });
 
+interface RoomOption {
+  id: string;
+  name: string;
+  children?: RoomOption[];
+}
+
+// Cascading Dropdown State
+const fullOptions = ref<RoomOption[]>([]);
+const selectedSystemId = ref("");
+const selectedAreaId = ref("");
+const selectedDistrictId = ref("");
+const selectedBuildingId = ref("");
+const selectedFloorId = ref("");
+const selectedRoomId = ref("");
+
+// Computed Options
+const systemOptions = computed(() => fullOptions.value);
+const areaOptions = computed(() => {
+  const sys = fullOptions.value.find((i) => i.id === selectedSystemId.value);
+  return sys?.children || [];
+});
+const districtOptions = computed(() => {
+  const area = areaOptions.value.find((i) => i.id === selectedAreaId.value);
+  return area?.children || [];
+});
+const buildingOptions = computed(() => {
+  const dist = districtOptions.value.find(
+    (i) => i.id === selectedDistrictId.value,
+  );
+  return dist?.children || [];
+});
+const floorOptions = computed(() => {
+  const build = buildingOptions.value.find(
+    (i) => i.id === selectedBuildingId.value,
+  );
+  return build?.children || [];
+});
+const roomOptions = computed(() => {
+  const floor = floorOptions.value.find((i) => i.id === selectedFloorId.value);
+  return floor?.children || [];
+});
+
+// Handlers
+const onSystemChange = () => {
+  selectedAreaId.value = "";
+  selectedDistrictId.value = "";
+  selectedBuildingId.value = "";
+  selectedFloorId.value = "";
+  selectedRoomId.value = "";
+};
+const onAreaChange = () => {
+  selectedDistrictId.value = "";
+  selectedBuildingId.value = "";
+  selectedFloorId.value = "";
+  selectedRoomId.value = "";
+};
+const onDistrictChange = () => {
+  selectedBuildingId.value = "";
+  selectedFloorId.value = "";
+  selectedRoomId.value = "";
+};
+const onBuildingChange = () => {
+  selectedFloorId.value = "";
+  selectedRoomId.value = "";
+};
+const onFloorChange = () => {
+  selectedRoomId.value = "";
+};
+const onRoomChange = () => {
+  // Populate addForm when a room is selected
+  addForm.value.system_id = selectedSystemId.value;
+  addForm.value.area_id = selectedAreaId.value;
+  addForm.value.building_id = selectedBuildingId.value; // Note: building_id in backend might expect 'buis' id
+  // Wait, let's check fetch_all_rooms structure.
+  // It maps: system -> area -> district -> buis -> floor -> room
+  // So 'building_id' in API probably corresponds to 'buis' level.
+  addForm.value.floor_id = selectedFloorId.value;
+  addForm.value.room_id = selectedRoomId.value;
+
+  // Set default alias
+  const room = roomOptions.value.find((i) => i.id === selectedRoomId.value);
+  if (room) {
+    addForm.value.alias_name = room.name;
+  }
+};
+
+const loadOptions = async () => {
+  try {
+    const res = await axios.get("/rooms.json?t=" + new Date().getTime());
+    fullOptions.value = res.data;
+  } catch (e) {
+    console.error("Failed to load rooms.json", e);
+  }
+};
+
 const fetchRooms = async () => {
   loading.value = true;
   try {
     const res = await api.get("/rooms");
     rooms.value = res.data;
   } catch (e) {
-    ElMessage.error("Failed to load rooms");
+    ElMessage.error("Failed to load subscriptions (Backend may be offline)");
   } finally {
     loading.value = false;
   }
@@ -158,6 +340,24 @@ const fetchRooms = async () => {
 const submitAddRoom = async () => {
   submitLoading.value = true;
   try {
+    // Need to include district_id?
+    // The backend `rooms.ts` expects: { system_id, area_id, building_id, floor_id, room_id, alias_name... }
+    // It does NOT invoke the proxy to fetch district.
+    // However, the `rooms` table in schema.sql DOES NOT store district_id.
+    // Wait, schema: CREATE TABLE rooms ( system_id, area_id, building_id, floor_id, room_id ... )
+    // Where does District go?
+    // In `tjuecard_main.py` query payload: 'elcarea': selection["area"]["id"], 'elcbuis': selection["buis"]["id"]...
+    // The "district" seems to be an intermediate level in the scraper but maybe not needed for the final query?
+    // Let's check `fetch_options` usage in `setup.py`.
+    // fetch_options('buis', payload={'sysid', 'area': AREA, 'district': DISTRICT})
+    // So to get the list of buildings, you need district.
+    // But to QUERY the bill, the payload is:
+    // 'elcarea': area, 'elcbuis': buis, 'roomNo': room
+    // It seems district ID is NOT sent in the final query!
+
+    // So `rooms.ts` backend also doesn't store district_id.
+    // This confirms we don't need to save district_id in DB.
+
     await api.post("/rooms", addForm.value);
     ElMessage.success("Room added");
     showAddDialog.value = false;
@@ -192,6 +392,7 @@ const logout = () => {
 
 onMounted(() => {
   fetchRooms();
+  loadOptions();
 });
 </script>
 

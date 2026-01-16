@@ -48,11 +48,17 @@ const handleLogin = async () => {
   loading.value = true;
   try {
     // Dev environment test account bypass
-    if (
-      import.meta.env.DEV &&
-      form.value.email === "test" &&
-      form.value.password === "123456"
-    ) {
+    // Dev environment test account bypass
+    const email = form.value.email.trim();
+    const password = form.value.password.trim();
+
+    console.log("Login attempt:", {
+      email,
+      password,
+      isDev: import.meta.env.DEV,
+    });
+
+    if (import.meta.env.DEV && email === "test" && password === "123456") {
       // Mock token and user for dev environment
       const mockToken = "dev-test-token-" + Date.now();
       const mockUser = { id: 0, email: "test@dev.local" };
