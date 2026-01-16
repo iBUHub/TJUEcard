@@ -1,11 +1,11 @@
 {
-  "compilerOptions": {
-    "target": "esnext",
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "lib": ["esnext"],
-    "strict": true,
-    "skipLibCheck": true,
-    "types": ["@cloudflare/workers-types"]
-  }
+    "compilerOptions": {
+        "lib": ["esnext"],
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "skipLibCheck": true,
+        "strict": true,
+        "target": "esnext",
+        "types": ["@cloudflare/workers-types"]
+    }
 }

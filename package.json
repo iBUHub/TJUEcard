@@ -1,0 +1,51 @@
+{
+    "name": "tjuecard",
+    "version": "0.2.0",
+    "description": "自动查询天津大学宿舍电费余额，低于设定值时邮件提醒",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "prepare": "husky"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/iBUHub/TJUEcard.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/iBUHub/TJUEcard/issues"
+    },
+    "homepage": "https://github.com/iBUHub/TJUEcard#readme",
+    "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^8.53.0",
+        "@typescript-eslint/parser": "^8.53.0",
+        "eslint": "^8.57.1",
+        "eslint-config-prettier": "^10.1.8",
+        "eslint-plugin-jsonc": "^2.21.0",
+        "eslint-plugin-prettier": "^5.5.5",
+        "eslint-plugin-sort-keys-fix": "^1.1.2",
+        "eslint-plugin-vue": "^9.33.0",
+        "husky": "^9.1.7",
+        "jsonc-eslint-parser": "^2.4.2",
+        "lint-staged": "^16.2.7",
+        "prettier": "^3.8.0",
+        "prettier-plugin-zh": "^0.6.0",
+        "vue-eslint-parser": "^10.2.0"
+    },
+    "lint-staged": {
+        "*.{js,jsx,ts,tsx,vue}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.json": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{css,less,md,yml,yaml}": "prettier --write"
+    }
+}
