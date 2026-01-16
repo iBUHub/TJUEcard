@@ -3,6 +3,7 @@ node_modules/
 package-lock.json
 dist/
 npm-debug.log
+*.tsbuildinfo
 
 # Python
 __pycache__/
