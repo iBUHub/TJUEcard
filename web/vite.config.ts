@@ -7,8 +7,9 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'http://127.0.0.1:8787', // Cloudflare Worker default local port
+                target: 'http://localhost:8787',
                 changeOrigin: true,
+                rewrite: path => path.replace(/^\/api/, ''),
             },
         },
     },

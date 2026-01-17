@@ -13,8 +13,8 @@ app.get("/", c => {
     return c.text("TJUEcard Server is running!");
 });
 
-app.route("/api/auth", auth);
-app.route("/api/rooms", rooms);
-app.route("/api/agent", agent);
+app.route("/auth", auth);
+app.route("/rooms", rooms);
+app.route("/agent", agent);
 
 export default app;
