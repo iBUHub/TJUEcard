@@ -24,19 +24,6 @@
 
 </div>
 
-<details>
-<summary><kbd>目录</kbd></summary>
-
-#### TOC
-
-- [⭐ 主要功能](#-主要功能)
-- [🚀 快速开始](#-快速开始)
-- [🤝 贡献](#-贡献)
-- [⚖️ 许可证](#️-许可证)
-- [ℹ️ 免责声明](#ℹ️-免责声明)
-
-</details>
-
 ## ⭐ 主要功能
 
 🔍 自动化查询电费。
@@ -46,12 +33,6 @@
 ⏰ 我们的系统会自动设置定时任务，每天检查一次电费余额。
 
 🔑 您不需要提供学号或密码，无需担心安全问题。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
 
 ## 🚀 快速开始
 
@@ -64,12 +45,6 @@
 3. **设置阈值**
    在房间列表中，您可以为每个房间设定一个电费报警阈值。当查询到的剩余电量低于该值时，系统将会向您注册的邮箱发送提醒通知。
 
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
 ## 🤝 贡献
 
 我们欢迎任何形式的贡献！如果您有好的想法或需求，欢迎通过以下方式参与项目：
@@ -78,31 +53,13 @@
 - **创建 Issue**：如果您有任何建议或发现了问题，请在 [GitHub Issue][link-issues] 页面进行讨论。
 - **参与开发**：如果您对项目的开发感兴趣，欢迎通过邮件联系我们：[hello@ibuhub.com](mailto:hello@ibuhub.com)。
 
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
 ## ⚖️ 许可证
 
 本项目版权归 iBUHub 所有，采用 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) 许可协议。您可自由使用、分享和修改，但需注明来源并遵守协议条款。如有侵权请联系维护者删除。
 
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
 ## ℹ️ 免责声明
 
 本项目仅供个人学习和交流之用，因他人利用本项目代码对网站或其他数据进行攻击而导致的任何后果，与本项目无关。在任何情况下，iBUHub 不对因本项目或其使用产生的任何索赔、损害或责任负责。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
 
 <!-- LINK GROUP -->
 
