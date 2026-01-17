@@ -40,7 +40,7 @@ Aims to solve the pain point of sudden power outages due to untimely top-ups.
 ## 🚀 Getting Started
 
 1. **Registration & Login**
-   Visit our [Home Page](https://tjuecard.ibuhub.com) and click "Register" to create a new account. After registration, log in with your credentials.
+   Visit our [Home Page](https://tjuecard.ibuhub.com) and click "Register" to create a new account. **Note: Only Tianjin University email addresses (@tju.edu.cn) are supported for registration.** After registration, log in with your credentials.
 
    ![][guide-01]
 
@@ -53,6 +53,16 @@ Aims to solve the pain point of sudden power outages due to untimely top-ups.
    In the room list, set an "Electricity Alarm Threshold". Our Agent will periodically check the balance. If it falls below this value, an email notification will be sent.
 
    ![][guide-03]
+
+## 🛠️ System Architecture
+
+v1 adopts a three-tier architecture design:
+
+- **Web Frontend**: Built with Vue 3, deployed on Cloudflare Pages, providing user registration, login, and room management interfaces.
+- **Server Backend**: Utilizes Cloudflare Workers serverless functions for authentication, room management, task scheduling, and email notifications, with data stored in Cloudflare D1 SQL database.
+- **Agent**: A Python process running in Docker containers, deployed within the campus network, periodically polling the backend for pending query tasks, simulating login to TJU's energy management system to fetch electricity data, and reporting results back to the backend. Currently, multiple Agent instances are deployed to ensure high availability.
+
+![][system-architecture]
 
 ## 🤝 Contribution
 
@@ -95,3 +105,4 @@ This project is for personal study and communication purposes only. iBUHub is no
 [guide-01]: https://cdn.ibenzene.net/tjuecard/TJUEcard_01.png
 [guide-02]: https://cdn.ibenzene.net/tjuecard/TJUEcard_02.png
 [guide-03]: https://cdn.ibenzene.net/tjuecard/TJUEcard_03.png
+[system-architecture]: https://cdn.ibenzene.net/tjuecard/TJUEcard_Architecture.png

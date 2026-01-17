@@ -119,6 +119,11 @@ auth.post("/send-verification", async c => {
         return c.json({ error: "Invalid email format" }, 400);
     }
 
+    // Validate email domain - only allow tju.edu.cn
+    if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
+        return c.json({ error: "仅支持 @tju.edu.cn 邮箱注册" }, 400);
+    }
+
     const now = Math.floor(Date.now() / 1000);
 
     // Check if a verification code was sent within the last 60 seconds
@@ -163,6 +168,11 @@ auth.post("/register", async c => {
 
     if (!email || !password) return c.json({ error: "Missing email or password" }, 400);
     if (!code) return c.json({ error: "Missing verification code" }, 400);
+
+    // Validate email domain - only allow tju.edu.cn
+    if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
+        return c.json({ error: "仅支持 @tju.edu.cn 邮箱注册" }, 400);
+    }
 
     const now = Math.floor(Date.now() / 1000);
 

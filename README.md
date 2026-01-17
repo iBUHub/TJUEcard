@@ -40,7 +40,7 @@
 ## 🚀 快速开始
 
 1. **注册与登录**
-   访问我们的「[应用首页](https://tjuecard.ibuhub.com)」，点击「立即注册」按钮创建一个新账户。注册完成后，使用您的凭据登录系统。
+   访问我们的「[应用首页](https://tjuecard.ibuhub.com)」，点击「立即注册」按钮创建一个新账户。**注意：仅支持天津大学邮箱（@tju.edu.cn）注册。** 注册完成后，使用您的凭据登录系统。
 
    ![][guide-01]
 
@@ -53,6 +53,16 @@
    在房间列表中，您可以为每个房间设定「电费报警阈值」，我们的 Agent 会定期查询电费。当查询到的剩余电量低于该值时，系统将会向您注册的邮箱发送提醒通知。
 
    ![][guide-03]
+
+## 🛠️ 系统架构
+
+v1 版本采用三层架构设计：
+
+- **Web 前端**：基于 Vue 3 构建，部署于 Cloudflare Pages，提供用户注册、登录及房间管理界面。
+- **Server 后端**：采用 Cloudflare Workers 的 Serverless 云函数，负责身份认证、房间管理、任务调度及邮件通知，数据存储使用 Cloudflare D1 SQL 数据库。
+- **Agent 代理**：运行于 Docker 容器中的 Python 进程，部署在校园网内，定期向后端轮询待查询任务，模拟登录天津大学能源管理系统获取电费数据，并将结果回传至后端。目前，我们部署了多个 Agent 实例，以确保高可用性。
+
+![][system-architecture]
 
 ## 🤝 贡献
 
@@ -95,3 +105,4 @@
 [guide-01]: https://cdn.ibenzene.net/tjuecard/TJUEcard_01.png
 [guide-02]: https://cdn.ibenzene.net/tjuecard/TJUEcard_02.png
 [guide-03]: https://cdn.ibenzene.net/tjuecard/TJUEcard_03.png
+[system-architecture]: https://cdn.ibenzene.net/tjuecard/TJUEcard_Architecture.png
