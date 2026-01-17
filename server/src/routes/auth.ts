@@ -46,6 +46,10 @@ auth.post("/login", async c => {
         return c.json({ error: "Invalid credentials" }, 401);
     }
 
+    if (!c.env.JWT_SECRET) {
+        return c.json({ error: "Server configuration error: JWT_SECRET is missing" }, 500);
+    }
+
     const token = await sign(
         { email: user.email, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 7, id: user.id },
         c.env.JWT_SECRET

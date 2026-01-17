@@ -5,6 +5,9 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 // Middleware for Agent Secret
 app.use("*", async (c, next) => {
+    if (!c.env.AGENT_SECRET) {
+        return c.json({ error: "Server configuration error: AGENT_SECRET is missing" }, 500);
+    }
     const secret = c.req.header("X-Agent-Secret");
     if (secret !== c.env.AGENT_SECRET) {
         return c.json({ error: "Unauthorized Agent" }, 401);
