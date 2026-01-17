@@ -46,7 +46,7 @@
                 <el-table-column prop="notification_threshold" label="阈值" />
                 <el-table-column label="操作">
                     <template #default="scope">
-                        <el-button type="danger" size="small" @click="deleteRoom(scope.row.room_id)">删除</el-button>
+                        <el-button type="danger" size="small" @click="deleteRoom(scope.row.id)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
