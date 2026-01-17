@@ -56,13 +56,18 @@
 
 ## 🛠️ 系统架构
 
-v1 版本采用三层架构设计：
+中心化查询的 v1 版本采用三层架构设计：
 
-- **Web 前端**：基于 Vue 3 构建，部署于 Cloudflare Pages，提供用户注册、登录及房间管理界面。
-- **Server 后端**：采用 Cloudflare Workers 的 Serverless 云函数，负责身份认证、房间管理、任务调度及邮件通知，数据存储使用 Cloudflare D1 SQL 数据库。
-- **Agent 代理**：运行于 Docker 容器中的 Python 进程，部署在校园网内，定期向后端轮询待查询任务，模拟登录天津大学能源管理系统获取电费数据，并将结果回传至后端。目前，我们部署了多个 Agent 实例，以确保高可用性。
+📱 **Web 前端**：基于 Vue 3 构建，部署于 Cloudflare Pages，提供用户注册、登录及房间管理界面。
 
-![][system-architecture]
+☁ **Server 后端**：采用 Cloudflare Workers 的 Serverless 云函数，负责身份认证、房间管理、任务调度及邮件通知，数据存储使用 Cloudflare D1 SQL 数据库。
+
+🐋 **Agent 代理**：运行于 Docker 容器中的 Python 进程，部署在校园网内，定期向后端轮询待查询任务，模拟登录天津大学能源管理系统获取电费数据，并将结果回传至后端。目前，我们部署了多个 Agent 实例，以确保高可用性。
+
+<!-- ![][system-architecture] -->
+<div align="center">
+  <img src="https://cdn.ibenzene.net/tjuecard/TJUEcard_Architecture.png" width="60%" />
+</div>
 
 ## 🤝 贡献
 

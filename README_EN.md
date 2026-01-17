@@ -56,13 +56,18 @@ Aims to solve the pain point of sudden power outages due to untimely top-ups.
 
 ## 🛠️ System Architecture
 
-v1 adopts a three-tier architecture design:
+The v1 version of centralized query adopts a three-tier architecture design:
 
-- **Web Frontend**: Built with Vue 3, deployed on Cloudflare Pages, providing user registration, login, and room management interfaces.
-- **Server Backend**: Utilizes Cloudflare Workers serverless functions for authentication, room management, task scheduling, and email notifications, with data stored in Cloudflare D1 SQL database.
-- **Agent**: A Python process running in Docker containers, deployed within the campus network, periodically polling the backend for pending query tasks, simulating login to TJU's energy management system to fetch electricity data, and reporting results back to the backend. Currently, multiple Agent instances are deployed to ensure high availability.
+📱 **Web Frontend**: Built with Vue 3, deployed on Cloudflare Pages, providing user registration, login, and room management interfaces.
 
-![][system-architecture]
+☁ **Server Backend**: Utilizes Cloudflare Workers serverless functions for authentication, room management, task scheduling, and email notifications, with data stored in Cloudflare D1 SQL database.
+
+🐋 **Agent**: A Python process running in Docker containers, deployed within the campus network, periodically polling the backend for pending query tasks, simulating login to TJU's energy management system to fetch electricity data, and reporting results back to the backend. Currently, multiple Agent instances are deployed to ensure high availability.
+
+<!-- ![][system-architecture] -->
+<div align="center">
+  <img src="https://cdn.ibenzene.net/tjuecard/TJUEcard_Architecture.png" width="60%" />
+</div>
 
 ## 🤝 Contribution
 
