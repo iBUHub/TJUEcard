@@ -3,7 +3,15 @@ compatibility_date = "2024-01-01"
 main = "src/index.ts"
 
 [vars]
-# AGENT_SECRET will be set in environment variables (wrangler secret put AGENT_SECRET and JWT_SECRET)
+# Non-secret environment variables
+SEND_CLOUD_FROM_EMAIL = "noreply@tjuecard.ibuhub.com"
+SEND_CLOUD_TEST_EMAIL = "hello@ibuhub.com"
+
+# Secrets (use `wrangler secret put <KEY_NAME>`):
+# - JWT_SECRET
+# - AGENT_SECRET
+# - SEND_CLOUD_API_USER
+# - SEND_CLOUD_API_KEY
 
 [[d1_databases]]
 binding = "DB"

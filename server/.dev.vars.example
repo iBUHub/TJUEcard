@@ -1,0 +1,9 @@
+# JWT Authentication
+JWT_SECRET=your_jwt_secret_key
+
+# Agent Authentication
+AGENT_SECRET=your_agent_secret_key
+
+# SendCloud Email API (Secrets - use `wrangler secret put`)
+SEND_CLOUD_API_USER=your_sendcloud_api_user
+SEND_CLOUD_API_KEY=your_sendcloud_api_key
