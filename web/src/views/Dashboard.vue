@@ -30,10 +30,10 @@
                         >
                             {{
                                 scope.row.last_query_status === 'success'
-                                    ? '成功'
+                                    ? '查询成功'
                                     : scope.row.last_query_status === 'failed'
-                                      ? '失败'
-                                      : '等待中'
+                                      ? '查询失败'
+                                      : '等待查询'
                             }}
                         </el-tag>
                     </template>

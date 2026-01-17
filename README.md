@@ -39,11 +39,17 @@
 1. **注册与登录**
    访问应用首页，点击注册按钮创建一个新账户。注册完成后，使用您的凭据登录系统。
 
+   ![][guide-01]
+
 2. **添加房间**
    登录后进入仪表盘，点击「添加房间」按钮。您需要提供房间的详细信息（如校区、楼栋、房间号）以便系统进行绑定。
 
+   ![][guide-02]
+
 3. **设置阈值**
-   在房间列表中，您可以为每个房间设定一个电费报警阈值。当查询到的剩余电量低于该值时，系统将会向您注册的邮箱发送提醒通知。
+   在房间列表中，您可以为每个房间设定一个电费报警阈值，我们的 Agent 会定期查询电费。当查询到的剩余电量低于该值时，系统将会向您注册的邮箱发送提醒通知。
+
+   ![][guide-03]
 
 ## 🤝 贡献
 
@@ -81,3 +87,6 @@
 [shield-pulls]: https://img.shields.io/github/issues-pr/iBUHub/TJUEcard?style=flat-square&logo=github&logoColor=5865F2&color=5865F2&labelColor=grey
 [shield-forks]: https://img.shields.io/github/forks/iBUHub/TJUEcard?style=flat-square&logo=github&logoColor=8AE8FF&color=8AE8FF&labelColor=grey
 [shield-contributors]: https://img.shields.io/github/contributors/iBUHub/TJUEcard?style=flat-square&logo=github&logoColor=C4F042&color=C4F042&labelColor=grey
+[guide-01]: https://cdn.ibenzene.net/tjuecard/TJUEcard_01.png
+[guide-02]: https://cdn.ibenzene.net/tjuecard/TJUEcard_02.png
+[guide-03]: https://cdn.ibenzene.net/tjuecard/TJUEcard_03.png
