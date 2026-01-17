@@ -1,6 +1,6 @@
 {
     "name": "tjuecard",
-    "version": "0.2.0",
+    "version": "1.0.0",
     "description": "自动查询天津大学宿舍电费余额，低于设定值时邮件提醒",
     "main": "index.js",
     "scripts": {
