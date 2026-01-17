@@ -90,7 +90,7 @@ This project is for personal study and communication purposes only. iBUHub is no
 <!-- LINK GROUP -->
 
 [back-to-top]: https://img.shields.io/badge/-BACK_TO_TOP-151515?style=flat-square
-[link-v0-final]: https://github.com/iBUHub/TJUEcard/tree/v0-final
+[link-v0-final]: https://github.com/iBUHub/TJUEcard/tree/backup/v0-final
 [link-tju]: https://www.tju.edu.cn
 [link-python]: https://www.python.org/downloads/release/python-3127/
 [link-deepwiki]: https://deepwiki.com/iBUHub/TJUEcard
