@@ -52,8 +52,8 @@
             </el-table>
 
             <!-- Add Room Dialog -->
-            <el-dialog v-model="showAddDialog" title="添加房间" width="600px">
-                <el-form label-width="100px">
+            <el-dialog v-model="showAddDialog" title="添加房间" width="600px" class="add-room-dialog">
+                <el-form label-width="100px" class="add-room-form">
                     <el-form-item label="系统">
                         <el-select
                             v-model="selectedSystemId"
@@ -427,5 +427,102 @@ onMounted(() => {
     color: #667eea;
     font-weight: 600;
     font-size: 18px;
+}
+
+/* Mobile Responsive Styles for Add Room Dialog */
+@media (max-width: 768px) {
+    /* Dialog responsive width and max height */
+    :deep(.add-room-dialog) {
+        width: 95% !important;
+        max-width: 95% !important;
+        margin: 20px auto !important;
+    }
+
+    :deep(.add-room-dialog .el-dialog__header) {
+        padding: 15px 20px;
+    }
+
+    :deep(.add-room-dialog .el-dialog__body) {
+        padding: 15px 20px;
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+
+    :deep(.add-room-dialog .el-dialog__footer) {
+        padding: 15px 20px;
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        border-top: 1px solid #eee;
+        z-index: 1;
+    }
+
+    /* Form responsive layout */
+    .add-room-form :deep(.el-form-item) {
+        margin-bottom: 18px;
+    }
+
+    .add-room-form :deep(.el-form-item__label) {
+        width: 70px !important;
+        font-size: 14px;
+        padding-right: 8px;
+    }
+
+    .add-room-form :deep(.el-form-item__content) {
+        margin-left: 70px !important;
+    }
+
+    /* Input and select responsive */
+    .add-room-form :deep(.el-input__wrapper),
+    .add-room-form :deep(.el-select) {
+        font-size: 14px;
+    }
+
+    .add-room-form :deep(.el-input-number) {
+        width: 100%;
+    }
+
+    /* Divider spacing */
+    .add-room-form :deep(.el-divider) {
+        margin: 15px 0;
+    }
+
+    /* Helper text */
+    .add-room-form :deep(.el-form-item__content > div) {
+        font-size: 11px;
+    }
+
+    /* Dialog footer buttons */
+    :deep(.dialog-footer) {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    :deep(.dialog-footer .el-button) {
+        flex: 1;
+        max-width: 120px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 480px) {
+    :deep(.add-room-dialog .el-dialog__body) {
+        max-height: calc(100vh - 180px);
+        padding: 12px 15px;
+    }
+
+    .add-room-form :deep(.el-form-item__label) {
+        width: 60px !important;
+        font-size: 13px;
+    }
+
+    .add-room-form :deep(.el-form-item__content) {
+        margin-left: 60px !important;
+    }
+
+    :deep(.dialog-footer .el-button) {
+        font-size: 14px;
+    }
 }
 </style>
