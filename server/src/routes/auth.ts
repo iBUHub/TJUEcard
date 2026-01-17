@@ -32,7 +32,7 @@ function generateVerificationEmailHtml(code: string): string {
                     <tr>
                         <td style="padding: 40px;">
                             <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-                                您好，您正在注册 TJUEcard 账户，请使用以下验证码完成注册：
+                                您好，您正在注册 TJUEcard 电量监控系统账户，请使用以下验证码完成注册：
                             </p>
                             <!-- Verification Code -->
                             <div style="text-align: center; margin: 32px 0;">
