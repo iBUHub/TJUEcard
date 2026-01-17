@@ -1,7 +1,33 @@
 import { Hono } from "hono";
+import { Context } from "hono";
 import { Bindings, Variables } from "../types";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+
+/**
+ * Update agent activity in the database (register or update last active time and IP)
+ */
+async function updateAgentActivity(c: Context<{ Bindings: Bindings; Variables: Variables }>) {
+    const agentUUID = c.req.header("X-Agent-UUID");
+    if (!agentUUID) return;
+
+    const now = Math.floor(Date.now() / 1000);
+    // Get client IP from CF-Connecting-IP or X-Forwarded-For
+    const clientIP = c.req.header("CF-Connecting-IP") || c.req.header("X-Forwarded-For")?.split(",")[0]?.trim() || null;
+
+    // Upsert: insert if not exists, update if exists
+    await c.env.DB.prepare(
+        `
+        INSERT INTO agents (uuid, last_active_at, last_ip, registered_at)
+        VALUES (?, datetime(?, 'unixepoch'), ?, datetime(?, 'unixepoch'))
+        ON CONFLICT(uuid) DO UPDATE SET
+            last_active_at = excluded.last_active_at,
+            last_ip = excluded.last_ip
+    `
+    )
+        .bind(agentUUID, now, clientIP, now)
+        .run();
+}
 
 // Middleware for Agent Secret
 app.use("*", async (c, next) => {
@@ -16,6 +42,9 @@ app.use("*", async (c, next) => {
 });
 
 app.post("/poll", async c => {
+    // Update agent activity in background
+    c.executionCtx.waitUntil(updateAgentActivity(c));
+
     const limit = 5;
     const now = Math.floor(Date.now() / 1000);
 
@@ -24,8 +53,8 @@ app.post("/poll", async c => {
     const pending = await c.env.DB.prepare(
         `
         SELECT * FROM rooms r
-        WHERE (next_query_time < ?) 
-          AND (lock_agent_id IS NULL OR lock_expires_at < ?)
+        WHERE (unixepoch(next_query_time) < ?) 
+          AND (lock_agent_id IS NULL OR unixepoch(lock_expires_at) < ?)
           AND EXISTS (SELECT 1 FROM subscriptions s WHERE s.room_id = r.id AND s.is_active = 1)
         ORDER BY next_query_time ASC
         LIMIT ?
@@ -42,8 +71,8 @@ app.post("/poll", async c => {
         const res = await c.env.DB.prepare(
             `
             UPDATE rooms 
-            SET lock_agent_id = ?, lock_expires_at = ? 
-            WHERE id = ? AND (lock_agent_id IS NULL OR lock_expires_at < ?)
+            SET lock_agent_id = ?, lock_expires_at = datetime(?, 'unixepoch') 
+            WHERE id = ? AND (lock_agent_id IS NULL OR unixepoch(lock_expires_at) < ?)
         `
         )
             .bind(agentId, now + 300, room.id, now)
@@ -58,6 +87,9 @@ app.post("/poll", async c => {
 });
 
 app.post("/submit", async c => {
+    // Update agent activity in background
+    c.executionCtx.waitUntil(updateAgentActivity(c));
+
     const { room_id, success, electricity, message } = await c.req.json();
     const now = Math.floor(Date.now() / 1000);
 
@@ -68,11 +100,11 @@ app.post("/submit", async c => {
             `
         UPDATE rooms 
         SET 
-            last_query_time = ?,
+            last_query_time = datetime(?, 'unixepoch'),
             last_query_status = ?,
             last_electricity = ?,
             last_message = ?,
-            next_query_time = ?,
+            next_query_time = datetime(?, 'unixepoch'),
             lock_agent_id = NULL
         WHERE id = ?
     `
@@ -108,7 +140,7 @@ app.post("/submit", async c => {
 async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
     const subs = await env.DB.prepare(
         `
-        SELECT u.email, s.notification_threshold, s.last_notified_at, s.user_id
+        SELECT u.email, s.notification_threshold, unixepoch(s.last_notified_at) as last_notified_at, s.user_id
         FROM subscriptions s
         JOIN users u ON s.user_id = u.id
         WHERE s.room_id = ? AND s.is_active = 1 AND s.notification_threshold != -1
@@ -127,7 +159,7 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
         if (!sub.last_notified_at) {
             shouldNotify = true;
         } else {
-            const last = sub.last_notified_at; // It's a number now
+            const last = sub.last_notified_at; // It's a number now (converted by unixepoch())
             if (now - last > COOLDOWN) shouldNotify = true;
         }
 
@@ -139,7 +171,9 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
             );
 
             // Update last_notified_at
-            await env.DB.prepare("UPDATE subscriptions SET last_notified_at = ? WHERE user_id = ? AND room_id = ?")
+            await env.DB.prepare(
+                "UPDATE subscriptions SET last_notified_at = datetime(?, 'unixepoch') WHERE user_id = ? AND room_id = ?"
+            )
                 .bind(now, sub.user_id, roomId)
                 .run();
         }

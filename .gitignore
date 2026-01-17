@@ -28,4 +28,4 @@ server/.sqlite/
 *.log
 *.pkl
 db_*.txt
-
+agent_uuid

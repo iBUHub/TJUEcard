@@ -4,6 +4,7 @@ import logging
 import json
 import os
 import pickle
+import uuid
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
@@ -13,6 +14,7 @@ load_dotenv()
 # ====== Configuration ======
 CONFIG_DIR = os.environ.get('CONFIG_DIR', os.path.dirname(os.path.abspath(__file__)))
 LOG_FILE = os.environ.get('LOG_FILE', os.path.join(CONFIG_DIR, 'agent.log'))
+UUID_FILE = os.path.join(CONFIG_DIR, 'agent_uuid')
 
 # Ensure config directory exists
 os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -30,8 +32,9 @@ def setup_logger(logger_name='TJUEcardAgent'):
     
     # Avoid duplicate handlers
     if not logger.handlers:
+        import sys
         # Console handler
-        console_handler = logging.StreamHandler()
+        console_handler = logging.StreamHandler(sys.stdout)
         console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)
@@ -65,6 +68,34 @@ VERIFY_LOGIN_URL = f"{BASE_DOMAIN}/epay/person/index"  # Same as LOGIN_PAGE_URL
 COOKIE_FILE = os.path.join(CONFIG_DIR, "cookies.pkl")
 
 # ====== Utility Functions ======
+
+def get_or_create_uuid() -> str:
+    """
+    Get existing agent UUID from file, or create a new one if not exists.
+    
+    :return: Agent UUID string
+    """
+    if os.path.exists(UUID_FILE):
+        try:
+            with open(UUID_FILE, 'r') as f:
+                agent_uuid = f.read().strip()
+                if agent_uuid:
+                    logger.info(f"Loaded existing agent UUID: {agent_uuid}")
+                    return agent_uuid
+        except Exception as e:
+            logger.warning(f"Failed to read UUID file: {e}")
+    
+    # Generate new UUID
+    agent_uuid = str(uuid.uuid4())
+    try:
+        with open(UUID_FILE, 'w') as f:
+            f.write(agent_uuid)
+        logger.info(f"Generated new agent UUID: {agent_uuid}")
+    except Exception as e:
+        logger.error(f"Failed to save UUID file: {e}")
+    
+    return agent_uuid
+
 
 def save_cookies(session: requests.Session, username: str, file_name: str) -> None:
     """
@@ -343,6 +374,8 @@ class Agent:
         self.accounts = config['accounts']
         self.sessions = []  # List of dicts: {'session': s, 'username': u, 'password': p}
         self.current_session_index = 0
+        self.agent_uuid = get_or_create_uuid()
+        logger.info(f"Agent initialized with UUID: {self.agent_uuid}")
         
     def init_sessions(self):
         """Initialize sessions for all configured accounts"""
@@ -401,7 +434,10 @@ class Agent:
     def poll(self):
         """Poll server for tasks"""
         try:
-            headers = {'X-Agent-Secret': self.secret}
+            headers = {
+                'X-Agent-Secret': self.secret,
+                'X-Agent-UUID': self.agent_uuid
+            }
             resp = requests.post(f"{self.base_url}/agent/poll", headers=headers, timeout=10)
             resp.raise_for_status()
             data = resp.json()
@@ -413,7 +449,10 @@ class Agent:
     def submit(self, room_id, success, electricity, message):
         """Submit task result to server"""
         try:
-            headers = {'X-Agent-Secret': self.secret}
+            headers = {
+                'X-Agent-Secret': self.secret,
+                'X-Agent-UUID': self.agent_uuid
+            }
             payload = {
                 'room_id': room_id,
                 'success': success,
