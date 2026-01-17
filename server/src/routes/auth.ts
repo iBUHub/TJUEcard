@@ -32,7 +32,7 @@ function generateVerificationEmailHtml(code: string): string {
                     <tr>
                         <td style="padding: 40px;">
                             <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-                                您好，您正在注册 TJUEcard 电量监控系统账户，请使用以下验证码完成注册：
+                                您好，您正在注册 TJUEcard 电量监控系统，请使用以下验证码完成注册：
                             </p>
                             <!-- Verification Code -->
                             <div style="text-align: center; margin: 32px 0;">
@@ -124,6 +124,12 @@ auth.post("/send-verification", async c => {
         return c.json({ error: "仅支持 @tju.edu.cn 邮箱注册" }, 400);
     }
 
+    // Check if user already exists
+    const existing = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
+    if (existing) {
+        return c.json({ error: "该邮箱已被注册" }, 409);
+    }
+
     const now = Math.floor(Date.now() / 1000);
 
     // Check if a verification code was sent within the last 60 seconds
@@ -192,7 +198,9 @@ auth.post("/register", async c => {
     }
 
     const existing = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
-    if (existing) return c.json({ error: "User already exists" }, 409);
+    if (existing) {
+        return c.json({ error: "该邮箱已被注册" }, 409);
+    }
 
     const passwordHash = hashSync(password, 10);
 

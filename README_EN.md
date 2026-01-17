@@ -73,9 +73,11 @@ The v1 version of centralized query adopts a three-tier architecture design:
 
 We welcome any form of contribution! If you have ideas or requirements, participate via:
 
-- **Submit a Pull Request**: If you've fixed a bug or implemented a new feature, PRs are welcome.
-- **Create an Issue**: Discuss suggestions or report problems on the [GitHub Issues][link-issues] page.
-- **Join Development**: If interested in project development, contact us at: [hello@ibuhub.com](mailto:hello@ibuhub.com).
+🔌 **Submit a Pull Request**: If you've fixed a bug or implemented a new feature, PRs are welcome.
+
+🐞 **Create an Issue**: Discuss suggestions or report problems on the [GitHub Issues][link-issues] page.
+
+👨‍💻 **Join Development**: If interested in project development, contact us at: [hello@ibuhub.com](mailto:hello@ibuhub.com).
 
 ## ⚖️ License
 

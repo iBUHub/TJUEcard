@@ -73,9 +73,11 @@
 
 我们欢迎任何形式的贡献！如果您有好的想法或需求，欢迎通过以下方式参与项目：
 
-- **提交 Pull Request**：如果您修复了 bug 或实现了新功能，欢迎提交 PR。
-- **创建 Issue**：如果您有任何建议或发现了问题，请在 [GitHub Issue][link-issues] 页面进行讨论。
-- **参与开发**：如果您对项目的开发或相关技术感兴趣，欢迎通过邮件联系我们：[hello@ibuhub.com](mailto:hello@ibuhub.com)。
+🔌 **提交 Pull Request**：如果您修复了 bug 或实现了新功能，欢迎提交 PR。
+
+🐞 **创建 Issue**：如果您有任何建议或发现了问题，请在 [GitHub Issue][link-issues] 页面进行讨论。
+
+👨‍💻 **参与开发**：如果您对项目的开发或相关技术感兴趣，欢迎通过邮件联系我们：[hello@ibuhub.com](mailto:hello@ibuhub.com)。
 
 ## ⚖️ 许可证
 
