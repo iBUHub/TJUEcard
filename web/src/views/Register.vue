@@ -11,6 +11,25 @@
                     <el-input v-model="form.email" placeholder="邮箱" class="input-field"></el-input>
                 </el-form-item>
                 <el-form-item>
+                    <div class="verification-row">
+                        <el-input
+                            v-model="form.code"
+                            placeholder="验证码"
+                            class="verification-input"
+                            maxlength="6"
+                        ></el-input>
+                        <el-button
+                            type="primary"
+                            :disabled="countdown > 0 || sendingCode"
+                            :loading="sendingCode"
+                            class="send-code-button"
+                            @click="handleSendCode"
+                        >
+                            {{ countdown > 0 ? `${countdown}s` : '发送验证码' }}
+                        </el-button>
+                    </div>
+                </el-form-item>
+                <el-form-item>
                     <el-input v-model="form.password" type="password" placeholder="密码" class="input-field"></el-input>
                 </el-form-item>
                 <el-form-item>
@@ -35,17 +54,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import api from '../api';
 import { ElMessage } from 'element-plus';
 
 const router = useRouter();
-const form = ref({ email: '', password: '' });
+const form = ref({ code: '', email: '', password: '' });
 const confirmPass = ref('');
 const loading = ref(false);
+const sendingCode = ref(false);
+const countdown = ref(0);
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+
+const handleSendCode = async () => {
+    if (!form.value.email) {
+        ElMessage.error('请先输入邮箱');
+        return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.value.email)) {
+        ElMessage.error('请输入有效的邮箱地址');
+        return;
+    }
+
+    sendingCode.value = true;
+    try {
+        await api.post('/auth/send-verification', { email: form.value.email });
+        ElMessage.success('验证码已发送，请查收邮件');
+
+        // Start countdown
+        countdown.value = 60;
+        countdownTimer = setInterval(() => {
+            countdown.value--;
+            if (countdown.value <= 0) {
+                if (countdownTimer) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                }
+            }
+        }, 1000);
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ElMessage.error((e as any).response?.data?.error || '发送验证码失败');
+    } finally {
+        sendingCode.value = false;
+    }
+};
 
 const handleRegister = async () => {
+    if (!form.value.email) {
+        ElMessage.error('请输入邮箱');
+        return;
+    }
+    if (!form.value.code) {
+        ElMessage.error('请输入验证码');
+        return;
+    }
+    if (!form.value.password) {
+        ElMessage.error('请输入密码');
+        return;
+    }
     if (form.value.password !== confirmPass.value) {
         ElMessage.error('密码不匹配');
         return;
@@ -62,6 +133,12 @@ const handleRegister = async () => {
         loading.value = false;
     }
 };
+
+onUnmounted(() => {
+    if (countdownTimer) {
+        clearInterval(countdownTimer);
+    }
+});
 </script>
 
 <style scoped>
@@ -133,6 +210,52 @@ const handleRegister = async () => {
 :deep(.input-field .el-input__wrapper.is-focus) {
     box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
     border-color: #667eea;
+}
+
+.verification-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+
+.verification-input {
+    flex: 1;
+}
+
+:deep(.verification-input .el-input__wrapper) {
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:deep(.verification-input .el-input__wrapper:hover) {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+:deep(.verification-input .el-input__wrapper.is-focus) {
+    box-shadow: 0 4px 16px rgba(102, 126, 234, 0.3);
+    border-color: #667eea;
+}
+
+.send-code-button {
+    min-width: 110px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.send-code-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.send-code-button:disabled {
+    background: #d9d9d9;
+    color: #999;
 }
 
 .register-button {
