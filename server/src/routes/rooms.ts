@@ -32,8 +32,8 @@ app.post("/", async c => {
     try {
         await c.env.DB.prepare(
             `
-         INSERT OR IGNORE INTO rooms (system_id, area_id, building_id, floor_id, room_id)
-         VALUES (?, ?, ?, ?, ?)
+         INSERT OR IGNORE INTO rooms (system_id, area_id, building_id, floor_id, room_id, next_query_time)
+         VALUES (?, ?, ?, ?, ?, unixepoch())
        `
         )
             .bind(system_id, area_id, building_id, floor_id, room_id)

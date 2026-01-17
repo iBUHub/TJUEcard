@@ -24,18 +24,14 @@ app.post("/poll", async c => {
     const pending = await c.env.DB.prepare(
         `
         SELECT * FROM rooms r
-        WHERE (
-            (typeof(next_query_time) = 'text' AND strftime('%s', next_query_time) < ?)
-            OR
-            (typeof(next_query_time) != 'text' AND next_query_time < ?)
-        ) 
+        WHERE (next_query_time < ?) 
           AND (lock_agent_id IS NULL OR lock_expires_at < ?)
           AND EXISTS (SELECT 1 FROM subscriptions s WHERE s.room_id = r.id AND s.is_active = 1)
         ORDER BY next_query_time ASC
         LIMIT ?
     `
     )
-        .bind(now, now, now, limit)
+        .bind(now, now, limit)
         .all();
 
     const tasks: Record<string, unknown>[] = [];

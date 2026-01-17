@@ -27,5 +27,5 @@ server/.sqlite/
 # Logs and Intermediate Files
 *.log
 *.pkl
-db_result.txt
+db_*.txt
 
