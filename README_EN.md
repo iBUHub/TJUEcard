@@ -66,7 +66,7 @@ The v1 version of centralized query adopts a three-tier architecture design:
 
 <!-- ![][system-architecture] -->
 <div align="center">
-  <img src="https://cdn.ibenzene.net/tjuecard/TJUEcard_Architecture.png" width="60%" />
+  <img src="https://cdn.ibenzene.net/tjuecard/TJUEcard_Architecture.png" width="75%" />
 </div>
 
 ## 🤝 Contribution
