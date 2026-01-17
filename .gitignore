@@ -23,3 +23,9 @@ Thumbs.db
 
 # Local Config
 server/.sqlite/
+
+# Logs and Intermediate Files
+*.log
+*.pkl
+db_result.txt
+
