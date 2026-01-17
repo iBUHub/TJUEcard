@@ -228,7 +228,7 @@ app.post("/submit", async c => {
     const { room_id, success, electricity, message } = await c.req.json();
     const now = Math.floor(Date.now() / 1000);
 
-    const nextTime = now + 86400; // 24 hours later
+    const nextTime = now + 43200; // 12 hours later
 
     const batch = [
         c.env.DB.prepare(
@@ -261,6 +261,16 @@ app.post("/submit", async c => {
                 thirtyDaysAgo
             )
         );
+
+        // Increment completed_tasks for the agent
+        const agentUUID = c.req.header("X-Agent-UUID");
+        if (agentUUID) {
+            batch.push(
+                c.env.DB.prepare("UPDATE agents SET completed_tasks = completed_tasks + 1 WHERE uuid = ?").bind(
+                    agentUUID
+                )
+            );
+        }
     }
 
     await c.env.DB.batch(batch);
@@ -291,7 +301,7 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
         .all<{ email: string; notification_threshold: number; last_notified_at: number | null; user_id: number }>();
 
     const now = Math.floor(Date.now() / 1000);
-    const COOLDOWN = 86400; // 24 hours in seconds
+    const COOLDOWN = 43200; // 12 hours in seconds
 
     for (const sub of subs.results) {
         let shouldNotify = false;

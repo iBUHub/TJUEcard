@@ -71,7 +71,8 @@ CREATE TABLE IF NOT EXISTS agents (
     uuid TEXT UNIQUE NOT NULL,
     last_active_at TIMESTAMP,
     last_ip TEXT,                     -- IPv4 or IPv6 address
-    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_tasks INTEGER DEFAULT 0 -- Number of successfully submitted queries
 );
 
 CREATE INDEX IF NOT EXISTS idx_agents_uuid ON agents(uuid);
