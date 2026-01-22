@@ -8,6 +8,9 @@ export type Bindings = {
     SEND_CLOUD_API_KEY: string;
     SEND_CLOUD_FROM_EMAIL: string;
     SEND_CLOUD_TEST_EMAIL: string;
+
+    // Development options
+    SKIP_EMAIL_VERIFICATION?: string; // "true" to skip email verification in dev mode
 };
 
 export type Variables = {

@@ -42,7 +42,7 @@ function generateEmailHtml(roomName: string, electric: number, threshold: number
                                     </td>
                                     <td style="width: 50%; padding: 20px; background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); border-radius: 0 12px 12px 0; text-align: center;">
                                         <div style="color: rgba(255,255,255,0.9); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">预警阈值</div>
-                                        <div style="color: #ffffff; font-size: 32px; font-weight: 700;">${threshold}<span style="font-size: 16px; font-weight: 400;"> 度</span></div>
+                                        <div style="color: #ffffff; font-size: 32px; font-weight: 700;">${threshold === -1 ? "始终" : threshold}<span style="font-size: 16px; font-weight: 400;"> ${threshold === -1 ? "通知" : "度"}</span></div>
                                     </td>
                                 </tr>
                             </table>
@@ -294,7 +294,7 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
         SELECT u.email, s.notification_threshold, unixepoch(s.last_notified_at) as last_notified_at, s.user_id
         FROM subscriptions s
         JOIN users u ON s.user_id = u.id
-        WHERE s.room_id = ? AND s.is_active = 1 AND s.notification_threshold != -1
+        WHERE s.room_id = ? AND s.is_active = 1
     `
     )
         .bind(roomId)
@@ -313,9 +313,9 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
             if (now - last > COOLDOWN) shouldNotify = true;
         }
 
-        if (electric < sub.notification_threshold && shouldNotify) {
+        if ((sub.notification_threshold === -1 || electric < sub.notification_threshold) && shouldNotify) {
             console.log(
-                `[Email Alert] To: ${sub.email} | Room: ${roomName} | Level: ${electric} < ${sub.notification_threshold}`
+                `[Email Alert] To: ${sub.email} | Room: ${roomName} | Level: ${electric} < ${sub.notification_threshold === -1 ? "Always" : sub.notification_threshold}`
             );
 
             const subject = "⚡ TJUEcard 电费余额不足提醒";

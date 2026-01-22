@@ -4,6 +4,12 @@
     "description": "自动查询天津大学宿舍电费余额，低于设定值时邮件提醒",
     "main": "index.js",
     "scripts": {
+        "postinstall": "npm run install:server && npm run install:web",
+        "install:server": "cd server && npm install",
+        "install:web": "cd web && npm install",
+        "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+        "dev:server": "cd server && npm run dev:local",
+        "dev:web": "cd web && npm run dev",
         "test": "echo \"Error: no test specified\" && exit 1",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
@@ -22,6 +28,7 @@
     },
     "homepage": "https://github.com/iBUHub/TJUEcard#readme",
     "devDependencies": {
+        "concurrently": "^8.2.2",
         "@typescript-eslint/eslint-plugin": "^8.53.0",
         "@typescript-eslint/parser": "^8.53.0",
         "eslint": "^8.57.1",

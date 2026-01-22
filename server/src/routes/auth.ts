@@ -162,8 +162,19 @@ auth.post("/send-verification", async c => {
     const html = generateVerificationEmailHtml(code);
     const sent = await sendEmail(c.env, email, subject, html);
 
-    if (!sent) {
+    // 如果开启了跳过邮箱验证（本地开发模式）, 即使邮件发送失败也返回成功
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
+    if (!sent && !skipEmailVerification) {
         return c.json({ error: "Failed to send verification email" }, 500);
+    }
+
+    // 本地开发模式: 返回验证码供调试使用
+    if (skipEmailVerification) {
+        console.log(`[DEV MODE] Verification code for ${email}: ${code}`);
+        return c.json({
+            dev_code: code,
+            message: "Verification code sent successfully", // 仅在开发模式下返回
+        });
     }
 
     return c.json({ message: "Verification code sent successfully" });
@@ -182,19 +193,30 @@ auth.post("/register", async c => {
 
     const now = Math.floor(Date.now() / 1000);
 
-    // Verify the verification code
-    const verification = await c.env.DB.prepare(
-        "SELECT id, code FROM email_verifications WHERE email = ? AND unixepoch(expires_at) > ? ORDER BY created_at DESC LIMIT 1"
-    )
-        .bind(email, now)
-        .first<{ id: number; code: string }>();
+    // 本地开发模式: 跳过验证码验证
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
 
-    if (!verification) {
-        return c.json({ error: "验证码不存在或已过期" }, 400);
-    }
+    let verificationId: number | null = null;
 
-    if (verification.code !== code) {
-        return c.json({ error: "验证码错误" }, 400);
+    if (!skipEmailVerification) {
+        // Verify the verification code
+        const verification = await c.env.DB.prepare(
+            "SELECT id, code FROM email_verifications WHERE email = ? AND unixepoch(expires_at) > ? ORDER BY created_at DESC LIMIT 1"
+        )
+            .bind(email, now)
+            .first<{ id: number; code: string }>();
+
+        if (!verification) {
+            return c.json({ error: "验证码不存在或已过期" }, 400);
+        }
+
+        if (verification.code !== code) {
+            return c.json({ error: "验证码错误" }, 400);
+        }
+
+        verificationId = verification.id;
+    } else {
+        console.log(`[DEV MODE] Skipping email verification for ${email}`);
     }
 
     const existing = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
@@ -211,8 +233,10 @@ auth.post("/register", async c => {
             .run();
 
         if (res.success) {
-            // Delete used verification code
-            await c.env.DB.prepare("DELETE FROM email_verifications WHERE id = ?").bind(verification.id).run();
+            // Delete used verification code (only if verification was performed)
+            if (verificationId) {
+                await c.env.DB.prepare("DELETE FROM email_verifications WHERE id = ?").bind(verificationId).run();
+            }
             return c.json({ message: "User registered successfully" }, 201);
         } else {
             return c.json({ error: "Failed to register" }, 500);

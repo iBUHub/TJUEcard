@@ -43,16 +43,27 @@
                         {{ scope.row.last_electricity ?? '-' }}
                     </template>
                 </el-table-column>
-                <el-table-column prop="notification_threshold" label="阈值" />
-                <el-table-column label="操作">
+                <el-table-column prop="notification_threshold" label="阈值">
                     <template #default="scope">
+                        {{ scope.row.notification_threshold === -1 ? '始终通知' : scope.row.notification_threshold }}
+                    </template>
+                </el-table-column>
+                <el-table-column label="操作" width="150">
+                    <template #default="scope">
+                        <el-button type="primary" size="small" @click="openEditDialog(scope.row)">修改</el-button>
                         <el-button type="danger" size="small" @click="deleteRoom(scope.row.id)">删除</el-button>
                     </template>
                 </el-table-column>
             </el-table>
 
-            <!-- Add Room Dialog -->
-            <el-dialog v-model="showAddDialog" title="添加房间" width="600px" class="add-room-dialog">
+            <!-- Add/Edit Room Dialog -->
+            <el-dialog
+                v-model="showAddDialog"
+                :title="isEditMode ? '修改房间' : '添加房间'"
+                width="600px"
+                class="add-room-dialog"
+                @closed="resetForm"
+            >
                 <el-form label-width="100px" class="add-room-form">
                     <el-form-item label="系统">
                         <el-select
@@ -166,7 +177,7 @@
                     <el-form-item label="阈值">
                         <el-input-number v-model="addForm.notification_threshold" :min="-1" :step="1"></el-input-number>
                         <div style="font-size: 12px; color: #999; line-height: 1.2; margin-top: 5px">
-                            电量低于此值时发送邮件提醒。设置 -1 禁用。
+                            电量低于此值时发送邮件提醒。设置 -1 为始终发送。
                         </div>
                     </el-form-item>
                 </el-form>
@@ -199,6 +210,8 @@ const router = useRouter();
 const rooms = ref([]);
 const loading = ref(false);
 const showAddDialog = ref(false);
+const isEditMode = ref(false);
+const editingRoomId = ref('');
 const submitLoading = ref(false);
 
 const addForm = ref({
@@ -279,10 +292,7 @@ const onRoomChange = () => {
     // Populate addForm when a room is selected
     addForm.value.system_id = selectedSystemId.value;
     addForm.value.area_id = selectedAreaId.value;
-    addForm.value.building_id = selectedBuildingId.value; // Note: building_id in backend might expect 'buis' id
-    // Wait, let's check fetch_all_rooms structure.
-    // It maps: system -> area -> district -> buis -> floor -> room
-    // So 'building_id' in API probably corresponds to 'buis' level.
+    addForm.value.building_id = selectedBuildingId.value;
     addForm.value.floor_id = selectedFloorId.value;
     addForm.value.room_id = selectedRoomId.value;
 
@@ -317,16 +327,78 @@ const fetchRooms = async () => {
 const submitAddRoom = async () => {
     submitLoading.value = true;
     try {
-        await api.post('/rooms', addForm.value);
-        ElMessage.success('房间已添加');
+        if (isEditMode.value) {
+            await api.put(`/rooms/${editingRoomId.value}`, addForm.value);
+            ElMessage.success('房间修改成功');
+        } else {
+            await api.post('/rooms', addForm.value);
+            ElMessage.success('房间已添加');
+        }
         showAddDialog.value = false;
         fetchRooms();
     } catch (e) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ElMessage.error((e as any).response?.data?.error || '添加房间失败');
+        ElMessage.error((e as any).response?.data?.error || (isEditMode.value ? '修改失败' : '添加房间失败'));
     } finally {
         submitLoading.value = false;
     }
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const openEditDialog = (room: any) => {
+    isEditMode.value = true;
+    editingRoomId.value = room.id;
+
+    // Pre-fill selection state
+    selectedSystemId.value = room.system_id;
+    selectedAreaId.value = room.area_id;
+    selectedDistrictId.value = '';
+
+    // Find district
+    const sys = fullOptions.value.find(s => s.id === room.system_id);
+    const area = sys?.children?.find(a => a.id === room.area_id);
+    const district = area?.children?.find(d => d.children?.some(b => b.id === room.building_id));
+
+    if (district) {
+        selectedDistrictId.value = district.id;
+    }
+
+    selectedBuildingId.value = room.building_id;
+    selectedFloorId.value = room.floor_id;
+    selectedRoomId.value = room.room_id;
+
+    // Pre-fill form
+    addForm.value = {
+        alias_name: room.alias_name,
+        area_id: room.area_id,
+        building_id: room.building_id,
+        floor_id: room.floor_id,
+        notification_threshold: room.notification_threshold,
+        room_id: room.room_id,
+        system_id: room.system_id,
+    };
+
+    showAddDialog.value = true;
+};
+
+const resetForm = () => {
+    isEditMode.value = false;
+    editingRoomId.value = '';
+    selectedSystemId.value = '';
+    selectedAreaId.value = '';
+    selectedDistrictId.value = '';
+    selectedBuildingId.value = '';
+    selectedFloorId.value = '';
+    selectedRoomId.value = '';
+    addForm.value = {
+        alias_name: '',
+        area_id: '',
+        building_id: '',
+        floor_id: '',
+        notification_threshold: -1,
+        room_id: '',
+        system_id: '',
+    };
 };
 
 const deleteRoom = (id: string) => {
