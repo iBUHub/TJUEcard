@@ -65,7 +65,7 @@ app.post("/", async c => {
            is_active = 1
        `
         )
-            .bind(user.id, room.id, alias_name, notification_threshold || -1)
+            .bind(user.id, room.id, alias_name, notification_threshold ?? -1)
             .run();
     } catch (e) {
         return c.json({ error: "Failed to subscribe: " + String(e) }, 500);

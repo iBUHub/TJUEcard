@@ -166,7 +166,7 @@
                     <el-form-item label="阈值">
                         <el-input-number v-model="addForm.notification_threshold" :min="-1" :step="1"></el-input-number>
                         <div style="font-size: 12px; color: #999; line-height: 1.2; margin-top: 5px">
-                            电量低于此值时发送邮件提醒。设置 -1 禁用。
+                            电量低于此值时发送邮件提醒。设置 -1 为始终发送。
                         </div>
                     </el-form-item>
                 </el-form>
