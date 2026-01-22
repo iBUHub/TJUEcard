@@ -12,6 +12,8 @@ __pycache__/
 .venv/
 venv/
 *.env
+build/
+*.spec
 
 # System
 .DS_Store
@@ -23,9 +25,15 @@ Thumbs.db
 
 # Local Config
 server/.sqlite/
+*.db
+*.db-shm
+*.db-wal
 
 # Logs and Intermediate Files
 *.log
 *.pkl
 db_*.txt
 agent_uuid
+
+# IDE
+.idea/
