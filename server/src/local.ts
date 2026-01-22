@@ -37,7 +37,7 @@ type Bindings = {
 // 创建 Hono 应用
 const app = new Hono<{ Bindings: Bindings }>();
 
-// 中间件：注入数据库和环境变量
+// 中间件: 注入数据库和环境变量
 app.use("*", async (c, next) => {
     // 模拟 Cloudflare Workers 的环境
     c.env = {

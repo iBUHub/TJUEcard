@@ -52,7 +52,7 @@ export class D1Adapter {
         const createPreparedStatement = (params: SQLParam[]): D1PreparedStatement => {
             return {
                 _params: params,
-                // 私有属性，供 batch 使用
+                // 私有属性, 供 batch 使用
                 _stmt: stmt,
 
                 all: async <T = unknown>() => {
@@ -131,11 +131,11 @@ export class D1Adapter {
                 const params = s._params || [];
 
                 if (stmt.reader) {
-                    // 如果是读取操作 (SELECT)
+                    // 如果是读取操作（SELECT）
                     const results = stmt.all(...params);
                     return { meta: { duration: 0 }, results, success: true };
                 } else {
-                    // 如果是写入操作 (INSERT, UPDATE, DELETE)
+                    // 如果是写入操作（INSERT, UPDATE, DELETE）
                     const info = stmt.run(...params);
                     return {
                         meta: {
@@ -150,7 +150,7 @@ export class D1Adapter {
             });
         });
 
-        // 直接执行，如果失败让其抛出异常
+        // 直接执行, 如果失败让其抛出异常
         return transaction(statements);
     }
 

@@ -162,13 +162,13 @@ auth.post("/send-verification", async c => {
     const html = generateVerificationEmailHtml(code);
     const sent = await sendEmail(c.env, email, subject, html);
 
-    // 如果开启了跳过邮箱验证（本地开发模式），即使邮件发送失败也返回成功
+    // 如果开启了跳过邮箱验证（本地开发模式）, 即使邮件发送失败也返回成功
     const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
     if (!sent && !skipEmailVerification) {
         return c.json({ error: "Failed to send verification email" }, 500);
     }
 
-    // 本地开发模式：返回验证码供调试使用
+    // 本地开发模式: 返回验证码供调试使用
     if (skipEmailVerification) {
         console.log(`[DEV MODE] Verification code for ${email}: ${code}`);
         return c.json({
@@ -193,7 +193,7 @@ auth.post("/register", async c => {
 
     const now = Math.floor(Date.now() / 1000);
 
-    // 本地开发模式：跳过验证码验证
+    // 本地开发模式: 跳过验证码验证
     const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
 
     let verificationId: number | null = null;

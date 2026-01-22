@@ -292,10 +292,7 @@ const onRoomChange = () => {
     // Populate addForm when a room is selected
     addForm.value.system_id = selectedSystemId.value;
     addForm.value.area_id = selectedAreaId.value;
-    addForm.value.building_id = selectedBuildingId.value; // Note: building_id in backend might expect 'buis' id
-    // Wait, let's check fetch_all_rooms structure.
-    // It maps: system -> area -> district -> buis -> floor -> room
-    // So 'building_id' in API probably corresponds to 'buis' level.
+    addForm.value.building_id = selectedBuildingId.value;
     addForm.value.floor_id = selectedFloorId.value;
     addForm.value.room_id = selectedRoomId.value;
 
@@ -355,14 +352,7 @@ const openEditDialog = (room: any) => {
     // Pre-fill selection state
     selectedSystemId.value = room.system_id;
     selectedAreaId.value = room.area_id;
-    selectedDistrictId.value = ''; // district_id is not stored in DB rooms table?
-    // Wait, let's check fetch_all_rooms structure again.
-    // The DB stores system_id, area_id, building_id, floor_id, room_id.
-    // However, the JSON structure is system -> area -> district -> building -> floor -> room.
-    // We need the district_id to make buildingOptions available.
-    // But we don't have district_id in the DB 'rooms' table (based on schema.sql).
-    // This is a problem if we need to pre-fill the cascading dropdowns properly.
-    // Let's deduce district_id from fullOptions.
+    selectedDistrictId.value = '';
 
     // Find district
     const sys = fullOptions.value.find(s => s.id === room.system_id);
