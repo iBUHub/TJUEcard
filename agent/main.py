@@ -28,7 +28,11 @@ def setup_logger(logger_name='TJUEcardAgent'):
     :return: Configured logger
     """
     logger = logging.getLogger(logger_name)
-    logger.setLevel(logging.INFO)
+    
+    # Get log level from environment
+    log_level = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    level = getattr(logging, log_level, logging.INFO)
+    logger.setLevel(level)
     
     # Avoid duplicate handlers
     if not logger.handlers:
@@ -478,7 +482,7 @@ class Agent:
         while True:
             tasks = self.poll()
             if not tasks:
-                logger.info("No tasks. Sleeping...")
+                logger.debug("No tasks. Sleeping...")
                 time.sleep(60)  # Sleep 60s
                 continue
             
