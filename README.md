@@ -54,6 +54,57 @@
 
    ![][guide-03]
 
+## 💻 本地开发
+
+如果您希望在本地环境中运行或贡献代码，请参考以下步骤：
+
+### 1. 配置环境变量
+
+项目根目录提供了 `.env.example` 文件。请将其复制并重命名为 `.env`，然后根据实际情况填写配置：
+
+```bash
+cp .env.example .env
+```
+
+配置项说明：
+
+- **端口配置**：`PORT=3000` (后端), `FRONTEND_PORT=5173` (前端)。
+- **密钥生成**：`JWT_SECRET` 和 `AGENT_SECRET` 可以随机生成长字符串（如：`openssl rand -hex 32`）。
+- **Agent 配置**：填写 `TJU_USERNAME` 和 `TJU_PASSWORD` 以便 Agent 能够模拟登录查询。
+- **本地调试**：设置 `SKIP_EMAIL_VERIFICATION=true` 可以在注册时跳过真实的邮件验证码。
+
+### 2. 一键启动 (推荐)
+
+在配置好 `.env` 后，您可以在项目根目录下运行以下命令，即可同时启动后端、前端和 Agent：
+
+```bash
+npm install
+npm run dev
+```
+
+> [!TIP]
+> 该命令使用 `concurrently` 并发运行：
+>
+> - **后端**: `cd server && npm run dev:local` (Port 3000)
+> - **前端**: `cd web && npm run dev` (Port 5173)
+> - **Agent**: `python start_agent_manual.py`
+
+### 3. 分步手动启动
+
+如果您需要分块调试，可以在根目录下分别运行：
+
+- **后端**: `npm run dev:server`
+- **前端**: `npm run dev:web`
+- **Agent**: `python start_agent_manual.py`
+
+### 🗄️ 数据库说明 (Local)
+
+本地开发**无需额外安装数据库软件**：
+
+- 后端启动时会自动在根目录创建 `tjuecard.db` (SQLite)。
+- 系统会自动读取 `schema.sql` 并完成表结构初始化。
+- **数据重置**：如果由于开发需要想清空数据，只需删除 `tjuecard.db` 并重启后端服务即可。
+
 ## 🛠️ 系统架构
 
 中心化查询的 v1 版本采用三层架构设计：

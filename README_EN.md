@@ -54,6 +54,57 @@ Aims to solve the pain point of sudden power outages due to untimely top-ups.
 
    ![][guide-03]
 
+## 💻 Local Development
+
+If you want to run or contribute to the project locally, please follow these steps:
+
+### 1. Configure Environment Variables
+
+A `.env.example` file is provided in the root directory. Copy it and rename it to `.env`, then fill in the configuration according to your situation:
+
+```bash
+cp .env.example .env
+```
+
+Configuration key notes:
+
+- **Port config**: `PORT=3000` (Backend), `FRONTEND_PORT=5173` (Frontend).
+- **Secret Generation**: `JWT_SECRET` and `AGENT_SECRET` can be randomly generated long strings (e.g., `openssl rand -hex 32`).
+- **Agent Config**: Fill in `TJU_USERNAME` and `TJU_PASSWORD` so that the Agent can simulate login for queries.
+- **Local Debugging**: Setting `SKIP_EMAIL_VERIFICATION=true` allows you to skip real email verification code validation during registration.
+
+### 2. One-click Start (Recommended)
+
+After configuring `.env`, you can run the following commands in the project root directory to start the backend, frontend, and Agent simultaneously:
+
+```bash
+npm install
+npm run dev
+```
+
+> [!TIP]
+> This command uses `concurrently` to run processes in parallel:
+>
+> - **Backend**: `npm run dev:server` (Port 3000)
+> - **Frontend**: `npm run dev:web` (Port 5173)
+> - **Agent**: `python start_agent_manual.py`
+
+### 3. Step-by-step Manual Start
+
+If you need to debug specific components separately, you can run them in the root directory:
+
+- **Backend**: `npm run dev:server`
+- **Frontend**: `npm run dev:web`
+- **Agent**: `python start_agent_manual.py`
+
+### 🗄️ Database Description (Local)
+
+**No additional database software is required** for local development:
+
+- The backend will automatically create `tjuecard.db` (SQLite) in the root directory upon startup.
+- The system will automatically read `schema.sql` and initialize the table structure.
+- **Data Reset**: If you wish to clear data for development purposes, simply delete `tjuecard.db` and restart the backend service.
+
 ## 🛠️ System Architecture
 
 The v1 version of centralized query adopts a three-tier architecture design:
