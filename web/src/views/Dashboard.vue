@@ -337,7 +337,7 @@ const submitAddRoom = async () => {
         // Filter out undefined and empty strings
         // Exclude 'area' from the full name as requested
         const nameParts = [sys, dist, build, floor, room].filter(part => part && part.trim());
-        const fullName = nameParts.join('-');
+        const fullName = nameParts.join(' - ');
 
         const payload = {
             ...addForm.value,

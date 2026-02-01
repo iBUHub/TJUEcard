@@ -13,7 +13,7 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 function generateEmailHtml(aliasName: string, fullName: string | null, electric: number, threshold: number): string {
     const roomInfoHtml = `
         <div style="color: #666; font-size: 14px; margin: 0 0 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
-            <p style="margin: 0;"><strong>房间信息：</strong>${aliasName}${fullName ? ` (${fullName})` : ""}</p>
+            <p style="margin: 0;"><strong>房间信息：</strong>${aliasName}${fullName ? `（${fullName}）` : ""}</p>
         </div>
     `;
 
@@ -160,7 +160,7 @@ app.post("/test-email", async c => {
     }
 
     const subject = "⚡ TJUEcard 邮件功能测试";
-    const html = generateEmailHtml("我的宿舍", "天大一卡通-32斋-101", 8.5, 20);
+    const html = generateEmailHtml("我的宿舍", "天大一卡通 - 32斋 - 101", 8.5, 20);
 
     const params = new URLSearchParams({
         apiKey: c.env.SEND_CLOUD_API_KEY,
