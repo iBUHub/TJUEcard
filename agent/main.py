@@ -331,7 +331,15 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
             }
             query_response = session.post(QUERY_URL, data=query_payload, headers=query_headers, timeout=10)
             query_response.raise_for_status()
-            result = query_response.json()
+
+            query_response.encoding = 'gb18030'
+
+            try:
+                result = query_response.json()
+            except json.JSONDecodeError:
+                logger.error(f"JSON Decode Error. Raw text: {query_response.text}")
+                logger.error(f"Raw bytes: {query_response.content.hex()}")
+                return {'success': False, 'message': 'Invalid JSON response'}
 
             # Display and log results
             if result.get("retcode") == 0 or result.get("retcode") == '0':
@@ -355,16 +363,19 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
                     'message': 'Success'
                 }
             else:
-                msg = f"Query failed: {result.get('retmsg')}"
-                logger.error(msg)
+                raw_msg = result.get('retmsg', 'Unknown error')
+                logger.error(f"Query failed: {raw_msg!r}")
                 return {
                     'success': False,
-                    'message': result.get('retmsg', 'Unknown error')
+                    'message': raw_msg
                 }
 
         except (requests.RequestException, json.JSONDecodeError, Exception) as e:
             msg = f"Error occurred during query: {e}"
-            logger.error(msg)
+            try:
+                logger.error(msg)
+            except UnicodeEncodeError:
+                 logger.error(msg.encode('utf-8', 'ignore').decode('utf-8'))
             if attempt == 0 and isinstance(e, requests.RequestException):
                 logger.info("Network error, attempting reconnection")
                 if handle_relogin(session, username, password):
