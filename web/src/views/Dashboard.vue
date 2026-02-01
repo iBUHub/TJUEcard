@@ -743,6 +743,8 @@ onUnmounted(() => {
     border: 1px solid rgba(255, 255, 255, 0.4);
     pointer-events: auto;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 70%;
+    margin: 0 auto;
 }
 
 .footer-content:hover {
