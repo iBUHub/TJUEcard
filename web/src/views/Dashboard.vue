@@ -299,24 +299,49 @@ const onSystemChange = () => {
     selectedBuildingId.value = '';
     selectedFloorId.value = '';
     selectedRoomId.value = '';
+
+    if (areaOptions.value.length === 1) {
+        selectedAreaId.value = areaOptions.value[0].id;
+        onAreaChange();
+    }
 };
 const onAreaChange = () => {
     selectedDistrictId.value = '';
     selectedBuildingId.value = '';
     selectedFloorId.value = '';
     selectedRoomId.value = '';
+
+    if (districtOptions.value.length === 1) {
+        selectedDistrictId.value = districtOptions.value[0].id;
+        onDistrictChange();
+    }
 };
 const onDistrictChange = () => {
     selectedBuildingId.value = '';
     selectedFloorId.value = '';
     selectedRoomId.value = '';
+
+    if (buildingOptions.value.length === 1) {
+        selectedBuildingId.value = buildingOptions.value[0].id;
+        onBuildingChange();
+    }
 };
 const onBuildingChange = () => {
     selectedFloorId.value = '';
     selectedRoomId.value = '';
+
+    if (floorOptions.value.length === 1) {
+        selectedFloorId.value = floorOptions.value[0].id;
+        onFloorChange();
+    }
 };
 const onFloorChange = () => {
     selectedRoomId.value = '';
+
+    if (roomOptions.value.length === 1) {
+        selectedRoomId.value = roomOptions.value[0].id;
+        onRoomChange();
+    }
 };
 const onRoomChange = () => {
     // Populate addForm when a room is selected
