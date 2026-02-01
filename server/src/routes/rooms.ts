@@ -56,6 +56,30 @@ app.post("/", async c => {
     if (!room) return c.json({ error: "处理房间信息失败" }, 500);
 
     // 2. Create Subscription
+    // Check limit before creating new subscription
+    const existingActive = await c.env.DB.prepare(
+        "SELECT id FROM subscriptions WHERE user_id = ? AND room_id = ? AND is_active = 1"
+    )
+        .bind(user.id, room.id)
+        .first();
+
+    if (!existingActive) {
+        const stats = await c.env.DB.prepare(
+            `SELECT 
+                (SELECT max_subscriptions FROM users WHERE id = ?) as max_subs,
+                (SELECT COUNT(*) FROM subscriptions WHERE user_id = ? AND is_active = 1) as current_count`
+        )
+            .bind(user.id, user.id)
+            .first<{ max_subs: number | null; current_count: number }>();
+
+        const limit = stats?.max_subs ?? 5;
+        const current = stats?.current_count ?? 0;
+
+        if (current >= limit) {
+            return c.json({ error: `订阅数量已达上限 (${limit})，如需扩容请联系 tjuecard@ibuhub.com` }, 403);
+        }
+    }
+
     try {
         await c.env.DB.prepare(
             `
