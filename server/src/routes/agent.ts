@@ -142,11 +142,11 @@ async function updateAgentActivity(c: Context<{ Bindings: Bindings; Variables: V
 // Middleware for Agent Secret
 app.use("*", async (c, next) => {
     if (!c.env.AGENT_SECRET) {
-        return c.json({ error: "Server configuration error: AGENT_SECRET is missing" }, 500);
+        return c.json({ error: "服务器配置错误：缺少 AGENT_SECRET" }, 500);
     }
     const secret = c.req.header("X-Agent-Secret");
     if (secret !== c.env.AGENT_SECRET) {
-        return c.json({ error: "Unauthorized Agent" }, 401);
+        return c.json({ error: "未授权的任务执行端" }, 401);
     }
     await next();
 });
@@ -156,7 +156,7 @@ app.post("/test-email", async c => {
     const testEmail = c.env.SEND_CLOUD_TEST_EMAIL || "hello@ibuhub.com";
 
     if (!c.env.SEND_CLOUD_API_USER || !c.env.SEND_CLOUD_API_KEY) {
-        return c.json({ error: "SendCloud API credentials not configured" }, 500);
+        return c.json({ error: "SendCloud API 凭据未配置" }, 500);
     }
 
     const subject = "⚡ TJUEcard 邮件功能测试 (8.5度) | 房间：我的宿舍";
@@ -315,7 +315,7 @@ app.post("/submit", async c => {
         }
     }
 
-    return c.json({ message: "Submitted" });
+    return c.json({ message: "提交成功" });
 });
 
 async function checkAndNotify(env: Bindings, roomId: number, electric: number) {

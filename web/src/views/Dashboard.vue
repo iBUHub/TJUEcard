@@ -518,6 +518,10 @@ onMounted(() => {
     font-size: 18px;
 }
 
+.add-room-form :deep(.el-form-item__label) {
+    pointer-events: none;
+}
+
 /* Mobile Responsive Styles for Add Room Dialog */
 @media (max-width: 768px) {
     /* Dialog responsive width and max height */

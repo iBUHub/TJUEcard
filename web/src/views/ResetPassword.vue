@@ -35,6 +35,7 @@
                         placeholder="请输入新密码"
                         class="input-field"
                         show-password
+                        @keyup.enter="handleResetPassword"
                     ></el-input>
                 </el-form-item>
                 <el-form-item>

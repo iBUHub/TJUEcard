@@ -38,6 +38,7 @@
                         type="password"
                         placeholder="确认密码"
                         class="input-field"
+                        @keyup.enter="handleRegister"
                     ></el-input>
                 </el-form-item>
                 <el-form-item>

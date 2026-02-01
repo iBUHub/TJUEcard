@@ -4,16 +4,16 @@ import { Bindings, Variables } from "./types";
 
 export const authMiddleware = async (c: Context<{ Bindings: Bindings; Variables: Variables }>, next: Next) => {
     const authHeader = c.req.header("Authorization");
-    if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+    if (!authHeader) return c.json({ error: "尚未登录或登录已过期" }, 401);
 
     const token = authHeader.split(" ")[1];
-    if (!token) return c.json({ error: "Unauthorized" }, 401);
+    if (!token) return c.json({ error: "尚未登录或登录已过期" }, 401);
 
     try {
         const payload = (await verify(token, c.env.JWT_SECRET, "HS256")) as Variables["user"];
         c.set("user", payload);
         await next();
     } catch {
-        return c.json({ error: "Unauthorized" }, 401);
+        return c.json({ error: "尚未登录或登录已过期" }, 401);
     }
 };

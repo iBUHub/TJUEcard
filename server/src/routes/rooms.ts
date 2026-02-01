@@ -26,7 +26,7 @@ app.post("/", async c => {
     const { system_id, area_id, building_id, floor_id, room_id, alias_name, notification_threshold, full_name } =
         await c.req.json();
 
-    if (!system_id || !room_id) return c.json({ error: "Missing required room parameters" }, 400);
+    if (!system_id || !room_id) return c.json({ error: "缺少必要的房间参数" }, 400);
 
     // 1. Ensure Room exists
     try {
@@ -53,7 +53,7 @@ app.post("/", async c => {
         .bind(system_id, area_id, building_id, floor_id, room_id)
         .first<{ id: number }>();
 
-    if (!room) return c.json({ error: "Failed to process room" }, 500);
+    if (!room) return c.json({ error: "处理房间信息失败" }, 500);
 
     // 2. Create Subscription
     try {
@@ -70,17 +70,17 @@ app.post("/", async c => {
             .bind(user.id, room.id, alias_name, notification_threshold ?? -1)
             .run();
     } catch (e) {
-        return c.json({ error: "Failed to subscribe: " + String(e) }, 500);
+        return c.json({ error: "订阅失败: " + String(e) }, 500);
     }
 
-    return c.json({ message: "Room added", room_id: room.id });
+    return c.json({ message: "房间添加成功", room_id: room.id });
 });
 
 app.delete("/:id", async c => {
     const user = c.get("user");
     const roomId = c.req.param("id");
     await c.env.DB.prepare("DELETE FROM subscriptions WHERE user_id = ? AND room_id = ?").bind(user.id, roomId).run();
-    return c.json({ message: "Room unsubscribed" });
+    return c.json({ message: "房间已取消订阅" });
 });
 
 app.put("/:id", async c => {
@@ -89,7 +89,7 @@ app.put("/:id", async c => {
     const { system_id, area_id, building_id, floor_id, room_id, alias_name, notification_threshold, full_name } =
         await c.req.json();
 
-    if (!system_id || !room_id) return c.json({ error: "Missing required room parameters" }, 400);
+    if (!system_id || !room_id) return c.json({ error: "缺少必要的房间参数" }, 400);
 
     // 1. Ensure Target Room exists
     try {
@@ -116,7 +116,7 @@ app.put("/:id", async c => {
         .bind(system_id, area_id, building_id, floor_id, room_id)
         .first<{ id: number }>();
 
-    if (!targetRoom) return c.json({ error: "Failed to process room" }, 500);
+    if (!targetRoom) return c.json({ error: "处理房间信息失败" }, 500);
 
     // 2. Update Subscription
     if (String(targetRoom.id) === String(oldRoomId)) {
@@ -150,7 +150,7 @@ app.put("/:id", async c => {
         await c.env.DB.batch(batch);
     }
 
-    return c.json({ message: "Subscription updated", room_id: targetRoom.id });
+    return c.json({ message: "订阅更新成功", room_id: targetRoom.id });
 });
 
 export default app;

@@ -115,7 +115,7 @@ function generateVerificationCode(): string {
 auth.post("/send-verification", async c => {
     const { email } = await c.req.json<{ email: string }>();
 
-    if (!email) return c.json({ error: "Missing email" }, 400);
+    if (!email) return c.json({ error: "请输入邮箱" }, 400);
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -169,7 +169,7 @@ auth.post("/send-verification", async c => {
     // If skip email verification is enabled (local dev mode), return success even if email fails
     const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
     if (!sent && !skipEmailVerification) {
-        return c.json({ error: "Failed to send verification email" }, 500);
+        return c.json({ error: "验证码邮件发送失败" }, 500);
     }
 
     // Local dev mode: return verification code for debugging
@@ -177,18 +177,18 @@ auth.post("/send-verification", async c => {
         console.log(`[DEV MODE] Verification code for ${email}: ${code}`);
         return c.json({
             dev_code: code,
-            message: "Verification code sent successfully", // Only returned in development mode
+            message: "验证码已发送", // Only returned in development mode
         });
     }
 
-    return c.json({ message: "Verification code sent successfully" });
+    return c.json({ message: "验证码已发送" });
 });
 
 auth.post("/register", async c => {
     const { email, password, code } = await c.req.json<{ email: string; password: string; code: string }>();
 
-    if (!email || !password) return c.json({ error: "Missing email or password" }, 400);
-    if (!code) return c.json({ error: "Missing verification code" }, 400);
+    if (!email || !password) return c.json({ error: "邮箱和密码不能为空" }, 400);
+    if (!code) return c.json({ error: "验证码不能为空" }, 400);
 
     // Validate email domain - only allow tju.edu.cn
     if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
@@ -241,9 +241,9 @@ auth.post("/register", async c => {
             if (verificationId) {
                 await c.env.DB.prepare("DELETE FROM email_verifications WHERE id = ?").bind(verificationId).run();
             }
-            return c.json({ message: "User registered successfully" }, 201);
+            return c.json({ message: "注册成功" }, 201);
         } else {
-            return c.json({ error: "Failed to register" }, 500);
+            return c.json({ error: "注册失败" }, 500);
         }
     } catch (e) {
         return c.json({ error: String(e) }, 500);
@@ -259,14 +259,14 @@ auth.post("/login", async c => {
         password_hash: string;
     } | null;
 
-    if (!user) return c.json({ error: "Invalid credentials" }, 401);
+    if (!user) return c.json({ error: "邮箱或密码错误" }, 401);
 
     if (!compareSync(password, user.password_hash)) {
-        return c.json({ error: "Invalid credentials" }, 401);
+        return c.json({ error: "邮箱或密码错误" }, 401);
     }
 
     if (!c.env.JWT_SECRET) {
-        return c.json({ error: "Server configuration error: JWT_SECRET is missing" }, 500);
+        return c.json({ error: "服务器内部错误：JWT_SECRET 未配置" }, 500);
     }
 
     const token = await sign(
@@ -281,12 +281,12 @@ auth.post("/login", async c => {
 auth.post("/send-reset-code", async c => {
     const { email } = await c.req.json<{ email: string }>();
 
-    if (!email) return c.json({ error: "Missing email" }, 400);
+    if (!email) return c.json({ error: "请输入邮箱" }, 400);
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-        return c.json({ error: "Invalid email format" }, 400);
+        return c.json({ error: "邮箱格式不正确" }, 400);
     }
 
     // Validate email domain - only allow tju.edu.cn
@@ -343,19 +343,19 @@ auth.post("/send-reset-code", async c => {
         console.log(`[DEV MODE] Reset code for ${email}: ${code}`);
         return c.json({
             dev_code: code,
-            message: "Reset code sent successfully",
+            message: "重置验证码已发送",
         });
     }
 
-    return c.json({ message: "Reset code sent successfully" });
+    return c.json({ message: "重置验证码已发送" });
 });
 
 // Reset password endpoint
 auth.post("/reset", async c => {
     const { email, password, code } = await c.req.json<{ email: string; password: string; code: string }>();
 
-    if (!email || !password) return c.json({ error: "Missing email or password" }, 400);
-    if (!code) return c.json({ error: "Missing verification code" }, 400);
+    if (!email || !password) return c.json({ error: "邮箱和密码不能为空" }, 400);
+    if (!code) return c.json({ error: "验证码不能为空" }, 400);
 
     // Validate email domain - only allow tju.edu.cn
     if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
@@ -408,9 +408,9 @@ auth.post("/reset", async c => {
             if (verificationId) {
                 await c.env.DB.prepare("DELETE FROM email_verifications WHERE id = ?").bind(verificationId).run();
             }
-            return c.json({ message: "Password reset successfully" });
+            return c.json({ message: "密码重置成功" });
         } else {
-            return c.json({ error: "Failed to reset password" }, 500);
+            return c.json({ error: "重置密码失败" }, 500);
         }
     } catch (e) {
         return c.json({ error: String(e) }, 500);

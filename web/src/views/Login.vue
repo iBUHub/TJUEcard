@@ -11,7 +11,13 @@
                     <el-input v-model="form.email" placeholder="邮箱" class="input-field"></el-input>
                 </el-form-item>
                 <el-form-item>
-                    <el-input v-model="form.password" type="password" placeholder="密码" class="input-field"></el-input>
+                    <el-input
+                        v-model="form.password"
+                        type="password"
+                        placeholder="密码"
+                        class="input-field"
+                        @keyup.enter="handleLogin"
+                    ></el-input>
                 </el-form-item>
                 <div class="forgot-password-container">
                     <router-link to="/reset" class="forgot-password-link">忘记密码?</router-link>
