@@ -517,8 +517,7 @@ class Agent:
                     task['id'],
                     result['success'],
                     result.get('electricity'),
-                    result.get('message'),
-                    result.get('full_name')
+                    result.get('message')
                 )
             
             time.sleep(5)
