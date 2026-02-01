@@ -53,8 +53,8 @@ function generateVerificationEmailHtml(code: string): string {
                     <tr>
                         <td style="padding: 24px 40px; background: #f8f9fa; border-top: 1px solid #eee;">
                             <p style="color: #999; font-size: 12px; margin: 0; text-align: center;">
-                                此邮件由 <strong style="color: #667eea;">TJUEcard</strong> 系统自动发送，请勿回复。<br>
-                                如需帮助，请访问 TJUEcard 管理页面。
+                                此邮件由 <a href="https://github.com/iBUHub/TJUEcard" style="color: #667eea; text-decoration: none; font-weight: bold;">TJUEcard</a> 系统自动发送，请勿回复。<br>
+                                如需帮助，请访问 <a href="https://tjuecard.ibuhub.com/" style="color: #667eea; text-decoration: none; font-weight: bold;">TJUEcard 管理页面</a>。
                             </p>
                         </td>
                     </tr>
