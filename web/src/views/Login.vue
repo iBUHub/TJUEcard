@@ -14,9 +14,7 @@
                     <el-input v-model="form.password" type="password" placeholder="密码" class="input-field"></el-input>
                 </el-form-item>
                 <div class="forgot-password-container">
-                    <el-button link type="primary" class="forgot-password-btn" @click="forgotPasswordVisible = true"
-                        >忘记密码?</el-button
-                    >
+                    <router-link to="/reset-password" class="forgot-password-link">忘记密码?</router-link>
                 </div>
                 <el-form-item>
                     <el-button type="primary" :loading="loading" class="login-button" @click="handleLogin"
@@ -29,32 +27,6 @@
             </el-form>
         </el-card>
     </div>
-
-    <!-- Forgot Password Modal -->
-    <el-dialog v-model="forgotPasswordVisible" title="重置密码" width="400px" append-to-body destroy-on-close>
-        <el-form :model="resetForm" label-position="top" @submit.prevent>
-            <el-form-item label="邮箱">
-                <el-input v-model="resetForm.email" placeholder="请输入注册邮箱" />
-            </el-form-item>
-            <el-form-item label="验证码">
-                <div class="code-input-group">
-                    <el-input v-model="resetForm.code" placeholder="6位验证码" style="flex: 1; margin-right: 10px" />
-                    <el-button type="primary" :disabled="codeCountdown > 0" @click="sendResetCode">
-                        {{ codeCountdown > 0 ? `${codeCountdown}s 后重试` : '获取验证码' }}
-                    </el-button>
-                </div>
-            </el-form-item>
-            <el-form-item label="新密码">
-                <el-input v-model="resetForm.password" type="password" placeholder="请输入新密码" show-password />
-            </el-form-item>
-        </el-form>
-        <template #footer>
-            <span class="dialog-footer">
-                <el-button @click="forgotPasswordVisible = false">取消</el-button>
-                <el-button type="primary" :loading="resetLoading" @click="handleResetPassword">确 认</el-button>
-            </span>
-        </template>
-    </el-dialog>
 </template>
 
 <script setup lang="ts">
@@ -66,73 +38,6 @@ import { ElMessage } from 'element-plus';
 const router = useRouter();
 const form = ref({ email: '', password: '' });
 const loading = ref(false);
-
-// Forgot Password Logic
-const forgotPasswordVisible = ref(false);
-const resetForm = ref({ code: '', email: '', password: '' });
-const resetLoading = ref(false);
-const codeCountdown = ref(0);
-let timer: ReturnType<typeof setInterval> | null = null;
-
-const sendResetCode = async () => {
-    if (!resetForm.value.email) {
-        ElMessage.warning('请输入邮箱');
-        return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(resetForm.value.email)) {
-        ElMessage.warning('邮箱格式不正确');
-        return;
-    }
-    if (!resetForm.value.email.endsWith('@tju.edu.cn')) {
-        ElMessage.warning('仅支持 @tju.edu.cn 邮箱');
-        return;
-    }
-
-    try {
-        const res = await api.post('/auth/send-reset-code', { email: resetForm.value.email });
-        if (res.data?.dev_code) {
-            ElMessage.success(`验证码已发送 (开发模式: ${res.data.dev_code})`);
-        } else {
-            ElMessage.success('验证码已发送，请检查邮箱');
-        }
-
-        codeCountdown.value = 60;
-        timer = setInterval(() => {
-            codeCountdown.value--;
-            if (codeCountdown.value <= 0) {
-                if (timer) clearInterval(timer);
-            }
-        }, 1000);
-    } catch (e) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ElMessage.error((e as any).response?.data?.error || '发送验证码失败');
-    }
-};
-
-const handleResetPassword = async () => {
-    if (!resetForm.value.email || !resetForm.value.code || !resetForm.value.password) {
-        ElMessage.warning('请填写所有字段');
-        return;
-    }
-
-    resetLoading.value = true;
-    try {
-        await api.post('/auth/reset-password', resetForm.value);
-        ElMessage.success('密码重置成功，请使用新密码登录');
-        forgotPasswordVisible.value = false;
-        resetForm.value = { code: '', email: '', password: '' };
-        if (timer) {
-            clearInterval(timer);
-            codeCountdown.value = 0;
-        }
-    } catch (e) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ElMessage.error((e as any).response?.data?.error || '重置失败');
-    } finally {
-        resetLoading.value = false;
-    }
-};
 
 const handleLogin = async () => {
     loading.value = true;
@@ -273,16 +178,16 @@ const handleLogin = async () => {
     margin-top: -10px;
 }
 
-.forgot-password-btn {
+.forgot-password-link {
     font-size: 14px;
-    padding: 0;
-    height: auto;
+    color: #667eea;
+    text-decoration: none;
+    transition: all 0.3s ease;
 }
 
-.code-input-group {
-    display: flex;
-    align-items: center;
-    width: 100%;
+.forgot-password-link:hover {
+    color: #764ba2;
+    text-decoration: underline;
 }
 
 .register-link {
