@@ -529,7 +529,6 @@ onMounted(() => {
     :deep(.add-room-dialog) {
         width: 95% !important;
         max-width: 95% !important;
-        margin: 20px auto !important;
     }
 
     :deep(.add-room-dialog .el-dialog__header) {
