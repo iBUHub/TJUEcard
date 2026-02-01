@@ -83,8 +83,13 @@ const handleSendCode = async () => {
 
     sendingCode.value = true;
     try {
-        await api.post('/auth/send-verification', { email: form.value.email });
-        ElMessage.success('验证码已发送，请查收邮件');
+        const res = await api.post('/auth/send-verification', { email: form.value.email });
+        if (res.data?.dev_code) {
+            ElMessage.success(`验证码已发送 (开发模式: ${res.data.dev_code})`);
+            form.value.code = res.data.dev_code;
+        } else {
+            ElMessage.success('验证码已发送，请查收邮件');
+        }
 
         // Start countdown
         countdown.value = 60;

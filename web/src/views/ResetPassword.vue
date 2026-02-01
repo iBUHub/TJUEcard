@@ -82,6 +82,7 @@ const handleSendCode = async () => {
         const res = await api.post('/auth/send-reset-code', { email: form.value.email });
         if (res.data?.dev_code) {
             ElMessage.success(`验证码已发送 (开发模式: ${res.data.dev_code})`);
+            form.value.code = res.data.dev_code;
         } else {
             ElMessage.success('验证码已发送，请检查邮箱');
         }
