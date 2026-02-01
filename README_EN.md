@@ -101,9 +101,9 @@ If you need to debug specific components separately, you can run them in the roo
 
 **No additional database software is required** for local development:
 
-- The backend will automatically create `tjuecard.db` (SQLite) in the root directory upon startup.
+- The backend will automatically create `tjuecard.db` (SQLite) in the `server/` directory upon startup.
 - The system will automatically read `schema.sql` and initialize the table structure.
-- **Data Reset**: If you wish to clear data for development purposes, simply delete `tjuecard.db` and restart the backend service.
+- **Data Reset**: If you wish to clear data for development purposes, simply delete `server/tjuecard.db` and restart the backend service.
 
 ## 🛠️ System Architecture
 
