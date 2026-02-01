@@ -90,8 +90,7 @@ const sendResetCode = async () => {
     }
 
     try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const res: any = await api.post('/auth/send-reset-code', { email: resetForm.value.email });
+        const res = await api.post('/auth/send-reset-code', { email: resetForm.value.email });
         if (res.data?.dev_code) {
             ElMessage.success(`验证码已发送 (开发模式: ${res.data.dev_code})`);
         } else {
