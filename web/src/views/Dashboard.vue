@@ -474,7 +474,7 @@ const checkScrollbar = () => {
 
         // Directly apply margin style to the table body (content), not the wrapper
         if (tableBody) {
-            tableBody.style.marginBottom = hasScroll ? '8px' : '0px';
+            tableBody.style.marginBottom = hasScroll ? '9.3px' : '0px';
         }
     }
 };
