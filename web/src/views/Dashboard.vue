@@ -197,20 +197,33 @@
             </el-dialog>
         </el-main>
         <el-footer class="dashboard-footer">
-            <a href="https://github.com/iBUHub/TJUEcard" target="_blank" class="github-link">
-                <svg
-                    height="20"
-                    width="20"
-                    fill="currentColor"
-                    viewBox="0 0 16 16"
-                    style="display: inline-block; vertical-align: middle"
-                >
-                    <path
-                        d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
-                    ></path>
-                </svg>
-                <span>如果您觉得有用，欢迎在 GitHub 点个 Star ⭐️</span>
-            </a>
+            <div class="footer-content">
+                <div class="footer-icon">
+                    <svg height="22" width="22" viewBox="0 0 24 24" fill="none">
+                        <!-- Message Bubble Outline -->
+                        <path
+                            d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM20 16H5.17L4 17.17V4H20V16Z"
+                            fill="#909399"
+                        />
+                        <!-- Small Heart Inside - Vertically Centered -->
+                        <path
+                            d="M12 15.5L11.15 14.72C8.3 12.15 6.5 10.44 6.5 8.4C6.5 6.73 7.73 5.5 9.3 5.5C10.16 5.5 10.99 5.93 11.5 6.61C12.01 5.93 12.84 5.5 13.7 5.5C15.27 5.5 16.5 6.73 16.5 8.4C16.5 10.44 14.7 12.15 11.85 14.72L12 15.5Z"
+                            fill="#909399"
+                            opacity="0.8"
+                        />
+                    </svg>
+                </div>
+                <div class="footer-text">
+                    喜欢我们的项目？<a
+                        href="https://github.com/iBUHub/TJUEcard"
+                        target="_blank"
+                        class="footer-link-bold"
+                        >在 GitHub 添加星标</a
+                    >并<a href="https://github.com/iBUHub/TJUEcard/issues" target="_blank" class="footer-link-bold"
+                        >分享您宝贵的建议</a
+                    >!
+                </div>
+            </div>
         </el-footer>
     </el-container>
 </template>
@@ -526,6 +539,14 @@ onUnmounted(() => {
 .layout-container {
     height: 100vh;
     background: linear-gradient(to bottom, #f5f7fa 0%, #e8ecf1 100%);
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-container :deep(.el-main) {
+    padding-bottom: 100px;
+    flex: 1;
+    overflow-y: auto;
 }
 
 .dashboard-header {
@@ -696,23 +717,61 @@ onUnmounted(() => {
 }
 
 .dashboard-footer {
-    text-align: center;
-    padding: 20px 0;
-    height: auto !important;
-}
-
-.github-link {
-    display: inline-flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 8px;
-    color: #909399;
-    text-decoration: none;
-    font-size: 14px;
-    transition: color 0.3s;
+    padding: 24px 0;
+    height: auto !important;
+    background: transparent;
+    pointer-events: none;
+    z-index: 100;
 }
 
-.github-link:hover {
+.footer-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 24px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 50px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    pointer-events: auto;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.footer-content:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
+}
+
+.footer-icon {
+    display: flex;
+    align-items: center;
+}
+
+.footer-text {
+    color: #606266;
+    font-size: 14px;
+}
+
+.footer-link-bold {
     color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    margin: 0 2px;
+    transition: all 0.3s ease;
+}
+
+.footer-link-bold:hover {
+    color: #764ba2;
+    text-decoration: underline;
 }
 
 /* Custom Scrollbar for Table */
