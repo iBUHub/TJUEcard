@@ -159,7 +159,7 @@ app.post("/test-email", async c => {
         return c.json({ error: "SendCloud API credentials not configured" }, 500);
     }
 
-    const subject = "⚡ TJUEcard 邮件功能测试";
+    const subject = "⚡ TJUEcard 邮件功能测试 (8.5度) | 房间：我的宿舍";
     const html = generateEmailHtml("我的宿舍", "天大一卡通 - 32斋 - 101", 8.5, 20);
 
     const params = new URLSearchParams({
@@ -371,7 +371,7 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
                 `[Email Alert] To: ${sub.email} | Alias: ${aliasName} | Full: ${fullName} | Level: ${electric}`
             );
 
-            const subject = `⚡ TJUEcard 电费预警: ${aliasName}`;
+            const subject = `⚡ TJUEcard 电费预警 (${electric}度) | 房间：${aliasName}`;
             const html = generateEmailHtml(aliasName, fullName, electric, sub.notification_threshold);
             const sent = await sendEmail(env, sub.email, subject, html);
 
