@@ -128,7 +128,7 @@ npm run dev
 
 🐞 **创建 Issue**：如果您有任何建议或发现了问题，请在 [GitHub Issue][link-issues] 页面进行讨论。
 
-👨‍💻 **参与开发**：如果您对项目的开发或相关技术感兴趣，欢迎通过邮件联系我们：[hello@ibuhub.com](mailto:hello@ibuhub.com)。
+👨‍💻 **参与开发**：如果您对项目的开发或相关技术感兴趣，欢迎通过邮件联系我们：[tjuecard@ibuhub.com](mailto:tjuecard@ibuhub.com)。
 
 ## ⚖️ 许可证
 

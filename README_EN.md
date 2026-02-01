@@ -128,7 +128,7 @@ We welcome any form of contribution! If you have ideas or requirements, particip
 
 🐞 **Create an Issue**: Discuss suggestions or report problems on the [GitHub Issues][link-issues] page.
 
-👨‍💻 **Join Development**: If interested in project development, contact us at: [hello@ibuhub.com](mailto:hello@ibuhub.com).
+👨‍💻 **Join Development**: If interested in project development, contact us at: [tjuecard@ibuhub.com](mailto:tjuecard@ibuhub.com).
 
 ## ⚖️ License
 
