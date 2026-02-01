@@ -8,7 +8,7 @@ const auth = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 /**
  * Generate beautiful HTML email template for verification code
  */
-function generateVerificationEmailHtml(code: string): string {
+function generateVerificationEmailHtml(code: string, type: "register" | "reset" = "register"): string {
     return `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -32,7 +32,11 @@ function generateVerificationEmailHtml(code: string): string {
                     <tr>
                         <td style="padding: 40px;">
                             <p style="color: #333; font-size: 16px; line-height: 1.6; margin: 0 0 24px;">
-                                您好，您正在注册 TJUEcard 电量监控系统，请使用以下验证码完成注册：
+                                ${
+                                    type === "register"
+                                        ? "您好，您正在注册 TJUEcard 电量监控系统，请使用以下验证码完成注册："
+                                        : "您好，您正在重置 TJUEcard 电量监控系统的密码，请使用以下验证码："
+                                }
                             </p>
                             <!-- Verification Code -->
                             <div style="text-align: center; margin: 32px 0;">
@@ -271,6 +275,146 @@ auth.post("/login", async c => {
     );
 
     return c.json({ token, user: { email: user.email, id: user.id } });
+});
+
+// Send reset password verification code endpoint
+auth.post("/send-reset-code", async c => {
+    const { email } = await c.req.json<{ email: string }>();
+
+    if (!email) return c.json({ error: "Missing email" }, 400);
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return c.json({ error: "Invalid email format" }, 400);
+    }
+
+    // Validate email domain - only allow tju.edu.cn
+    if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
+        return c.json({ error: "仅支持 @tju.edu.cn 邮箱" }, 400);
+    }
+
+    // Check if user exists (Must exist for password reset)
+    const existing = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
+    if (!existing) {
+        return c.json({ error: "该邮箱未注册" }, 404);
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    // Check if a verification code was sent within the last 60 seconds
+    const recent = await c.env.DB.prepare(
+        "SELECT id FROM email_verifications WHERE email = ? AND unixepoch(created_at) > ? LIMIT 1"
+    )
+        .bind(email, now - 60)
+        .first();
+
+    if (recent) {
+        return c.json({ error: "请等待 60 秒后再重新发送验证码" }, 429);
+    }
+
+    // Delete old verification codes for this email
+    await c.env.DB.prepare("DELETE FROM email_verifications WHERE email = ?").bind(email).run();
+
+    // Generate new verification code
+    const code = generateVerificationCode();
+    const expiresAt = now + 300; // 5 minutes
+
+    // Store the verification code
+    await c.env.DB.prepare(
+        "INSERT INTO email_verifications (email, code, expires_at, created_at) VALUES (?, ?, datetime(?, 'unixepoch'), datetime(?, 'unixepoch'))"
+    )
+        .bind(email, code, expiresAt, now)
+        .run();
+
+    // Send verification email
+    const subject = "🔐 TJUEcard 重置密码验证码";
+    const html = generateVerificationEmailHtml(code, "reset");
+    const sent = await sendEmail(c.env, email, subject, html);
+
+    // 如果开启了跳过邮箱验证（本地开发模式）, 即使邮件发送失败也返回成功
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
+    if (!sent && !skipEmailVerification) {
+        return c.json({ error: "Failed to send verification email" }, 500);
+    }
+
+    // 本地开发模式: 返回验证码供调试使用
+    if (skipEmailVerification) {
+        console.log(`[DEV MODE] Reset code for ${email}: ${code}`);
+        return c.json({
+            dev_code: code,
+            message: "Reset code sent successfully",
+        });
+    }
+
+    return c.json({ message: "Reset code sent successfully" });
+});
+
+// Reset password endpoint
+auth.post("/reset-password", async c => {
+    const { email, password, code } = await c.req.json<{ email: string; password: string; code: string }>();
+
+    if (!email || !password) return c.json({ error: "Missing email or password" }, 400);
+    if (!code) return c.json({ error: "Missing verification code" }, 400);
+
+    // Validate email domain - only allow tju.edu.cn
+    if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
+        return c.json({ error: "仅支持 @tju.edu.cn 邮箱" }, 400);
+    }
+
+    const now = Math.floor(Date.now() / 1000);
+
+    // 本地开发模式: 跳过验证码验证
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
+
+    let verificationId: number | null = null;
+
+    if (!skipEmailVerification) {
+        // Verify the verification code
+        const verification = await c.env.DB.prepare(
+            "SELECT id, code FROM email_verifications WHERE email = ? AND unixepoch(expires_at) > ? ORDER BY created_at DESC LIMIT 1"
+        )
+            .bind(email, now)
+            .first<{ id: number; code: string }>();
+
+        if (!verification) {
+            return c.json({ error: "验证码不存在或已过期" }, 400);
+        }
+
+        if (verification.code !== code) {
+            return c.json({ error: "验证码错误" }, 400);
+        }
+
+        verificationId = verification.id;
+    } else {
+        console.log(`[DEV MODE] Skipping email verification (reset) for ${email}`);
+    }
+
+    const existing = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first();
+    if (!existing) {
+        return c.json({ error: "该邮箱未注册" }, 404);
+    }
+
+    const passwordHash = hashSync(password, 10);
+
+    try {
+        const res = await c.env.DB.prepare("UPDATE users SET password_hash = ? WHERE email = ?")
+            // eslint-disable-next-line
+            .bind(passwordHash, email)
+            .run();
+
+        if (res.success) {
+            // Delete used verification code (only if verification was performed)
+            if (verificationId) {
+                await c.env.DB.prepare("DELETE FROM email_verifications WHERE id = ?").bind(verificationId).run();
+            }
+            return c.json({ message: "Password reset successfully" });
+        } else {
+            return c.json({ error: "Failed to reset password" }, 500);
+        }
+    } catch (e) {
+        return c.json({ error: String(e) }, 500);
+    }
 });
 
 export default auth;
