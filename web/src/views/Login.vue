@@ -14,7 +14,7 @@
                     <el-input v-model="form.password" type="password" placeholder="密码" class="input-field"></el-input>
                 </el-form-item>
                 <div class="forgot-password-container">
-                    <router-link to="/reset-password" class="forgot-password-link">忘记密码?</router-link>
+                    <router-link to="/reset" class="forgot-password-link">忘记密码?</router-link>
                 </div>
                 <el-form-item>
                     <el-button type="primary" :loading="loading" class="login-button" @click="handleLogin"

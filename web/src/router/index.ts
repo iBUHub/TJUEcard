@@ -7,7 +7,7 @@ const router = createRouter({
     routes: [
         { component: Login, meta: { guest: true }, path: '/login' },
         { component: () => import('../views/Register.vue'), meta: { guest: true }, path: '/register' },
-        { component: () => import('../views/ResetPassword.vue'), meta: { guest: true }, path: '/reset-password' },
+        { component: () => import('../views/ResetPassword.vue'), meta: { guest: true }, path: '/reset' },
         { component: Dashboard, meta: { requiresAuth: true }, path: '/' },
     ],
 });

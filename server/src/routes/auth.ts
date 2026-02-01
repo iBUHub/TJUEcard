@@ -351,7 +351,7 @@ auth.post("/send-reset-code", async c => {
 });
 
 // Reset password endpoint
-auth.post("/reset-password", async c => {
+auth.post("/reset", async c => {
     const { email, password, code } = await c.req.json<{ email: string; password: string; code: string }>();
 
     if (!email || !password) return c.json({ error: "Missing email or password" }, 400);

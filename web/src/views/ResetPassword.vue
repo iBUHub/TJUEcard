@@ -106,7 +106,7 @@ const handleResetPassword = async () => {
 
     loading.value = true;
     try {
-        await api.post('/auth/reset-password', form.value);
+        await api.post('/auth/reset', form.value);
         ElMessage.success('密码重置成功，请使用新密码登录');
         router.push('/login');
     } catch (e) {
