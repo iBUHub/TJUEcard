@@ -80,7 +80,8 @@ const handleSendCode = async () => {
 
     try {
         const res = await api.post('/auth/send-reset-code', { email: form.value.email });
-        if (res.data?.dev_code) {
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        if (res.data?.dev_code && isLocal) {
             ElMessage.success(`验证码已发送 (开发模式: ${res.data.dev_code})`);
             form.value.code = res.data.dev_code;
         } else {

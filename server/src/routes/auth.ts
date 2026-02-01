@@ -167,7 +167,7 @@ auth.post("/send-verification", async c => {
     const sent = await sendEmail(c.env, email, subject, html);
 
     // If skip email verification is enabled (local dev mode), return success even if email fails
-    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true" && c.env.NODE_ENV !== "production";
     if (!sent && !skipEmailVerification) {
         return c.json({ error: "验证码邮件发送失败" }, 500);
     }
@@ -177,7 +177,7 @@ auth.post("/send-verification", async c => {
         console.log(`[DEV MODE] Verification code for ${email}: ${code}`);
         return c.json({
             dev_code: code,
-            message: "验证码已发送", // Only returned in development mode
+            message: "验证码已发送",
         });
     }
 
@@ -198,7 +198,7 @@ auth.post("/register", async c => {
     const now = Math.floor(Date.now() / 1000);
 
     // Local dev mode: skip verification code validation
-    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true" && c.env.NODE_ENV !== "production";
 
     let verificationId: number | null = null;
 
@@ -333,7 +333,7 @@ auth.post("/send-reset-code", async c => {
     const sent = await sendEmail(c.env, email, subject, html);
 
     // If skip email verification is enabled (local dev mode), return success even if email fails
-    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true" && c.env.NODE_ENV !== "production";
     if (!sent && !skipEmailVerification) {
         return c.json({ error: "Failed to send verification email" }, 500);
     }
@@ -365,7 +365,7 @@ auth.post("/reset", async c => {
     const now = Math.floor(Date.now() / 1000);
 
     // Local dev mode: skip verification code validation
-    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true";
+    const skipEmailVerification = c.env.SKIP_EMAIL_VERIFICATION === "true" && c.env.NODE_ENV !== "production";
 
     let verificationId: number | null = null;
 

@@ -11,6 +11,7 @@ export type Bindings = {
 
     // Development options
     SKIP_EMAIL_VERIFICATION?: string; // "true" to skip email verification in dev mode
+    NODE_ENV?: string;
 };
 
 export type Variables = {

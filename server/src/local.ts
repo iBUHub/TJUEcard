@@ -32,6 +32,7 @@ type Bindings = {
     SEND_CLOUD_FROM_EMAIL: string;
     SEND_CLOUD_TEST_EMAIL: string;
     SKIP_EMAIL_VERIFICATION?: string;
+    NODE_ENV?: string;
 };
 
 // Create Hono application
@@ -44,6 +45,7 @@ app.use("*", async (c, next) => {
         AGENT_SECRET: process.env.AGENT_SECRET || "dev-agent-secret",
         DB: d1Adapter,
         JWT_SECRET: process.env.JWT_SECRET || "dev-secret-key-change-in-production",
+        NODE_ENV: "development",
         SEND_CLOUD_API_KEY: process.env.SEND_CLOUD_API_KEY || "",
         SEND_CLOUD_API_USER: process.env.SEND_CLOUD_API_USER || "",
         SEND_CLOUD_FROM_EMAIL: process.env.SEND_CLOUD_FROM_EMAIL || "noreply@tjuecard.ibuhub.com",

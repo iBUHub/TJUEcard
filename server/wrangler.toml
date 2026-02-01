@@ -6,6 +6,7 @@ main = "src/index.ts"
 # Non-secret environment variables
 SEND_CLOUD_FROM_EMAIL = "noreply@tjuecard.ibuhub.com"
 SEND_CLOUD_TEST_EMAIL = "hello@ibuhub.com"
+NODE_ENV = "production"
 
 # Secrets (use `wrangler secret put <KEY_NAME>`):
 # - JWT_SECRET
