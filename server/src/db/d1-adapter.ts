@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 
-// 定义允许的 SQL 参数类型
+// Define allowed SQL parameter types
 export type SQLParam = string | number | boolean | null | ArrayBuffer;
 
 export interface D1Meta {
@@ -20,7 +20,7 @@ export interface D1Result<T = unknown> {
     meta: D1Meta;
 }
 
-// 内部使用的 PreparedStatement 接口
+// Internal PreparedStatement interface
 export interface D1PreparedStatement {
     bind: (...params: SQLParam[]) => D1PreparedStatement;
     all: <T = unknown>() => Promise<D1Result<T>>;
@@ -32,8 +32,8 @@ export interface D1PreparedStatement {
 }
 
 /**
- * 将 better-sqlite3 适配为 D1Database 接口
- * 用于本地开发时替代 Cloudflare D1
+ * Adapt better-sqlite3 to D1Database interface
+ * Used as a replacement for Cloudflare D1 during local development
  */
 export class D1Adapter {
     private db: Database.Database;
@@ -43,16 +43,16 @@ export class D1Adapter {
     }
 
     /**
-     * 准备 SQL 语句
+     * Prepare SQL statement
      */
     prepare(query: string) {
         const stmt = this.db.prepare(query);
 
-        // 内部辅助构建 PreparedStatement 对象
+        // Internal helper to build PreparedStatement object
         const createPreparedStatement = (params: SQLParam[]): D1PreparedStatement => {
             return {
                 _params: params,
-                // 私有属性, 供 batch 使用
+                // Private property for batch usage
                 _stmt: stmt,
 
                 all: async <T = unknown>() => {
@@ -116,26 +116,26 @@ export class D1Adapter {
             };
         };
 
-        // 初始状态（无参数）
+        // Initial state (no parameters)
         return createPreparedStatement([]);
     }
 
     /**
-     * 批量执行
+     * Execute in batch
      */
     async batch(statements: D1PreparedStatement[]): Promise<D1Result<unknown>[]> {
-        // better-sqlite3 的事务处理
+        // Transaction handling for better-sqlite3
         const transaction = this.db.transaction((stmts: D1PreparedStatement[]) => {
             return stmts.map(s => {
                 const stmt = s._stmt;
                 const params = s._params || [];
 
                 if (stmt.reader) {
-                    // 如果是读取操作（SELECT）
+                    // If it's a read operation (SELECT)
                     const results = stmt.all(...params);
                     return { meta: { duration: 0 }, results, success: true };
                 } else {
-                    // 如果是写入操作（INSERT, UPDATE, DELETE）
+                    // If it's a write operation (INSERT, UPDATE, DELETE)
                     const info = stmt.run(...params);
                     return {
                         meta: {
@@ -150,12 +150,12 @@ export class D1Adapter {
             });
         });
 
-        // 直接执行, 如果失败让其抛出异常
+        // Execute directly, let it throw exception if failed
         return transaction(statements);
     }
 
     /**
-     * 执行原始 SQL
+     * Execute raw SQL
      */
     async exec(query: string) {
         try {

@@ -4,57 +4,57 @@ import { join } from "path";
 import { SQLParam } from "./d1-adapter";
 
 /**
- * 本地 SQLite 数据库管理器
+ * Local SQLite Database Manager
  */
 export class LocalDatabase {
     private db: Database.Database;
 
     constructor(dbPath: string = "./tjuecard.db") {
-        // 初始化数据库连接
+        // Initialize database connection
         this.db = new Database(dbPath);
 
-        // 启用外键约束
+        // Enable foreign key constraints
         this.db.pragma("foreign_keys = ON");
 
-        console.log(`📦 数据库已连接: ${dbPath}`);
+        console.log(`📦 Database connected: ${dbPath}`);
     }
 
     /**
-     * 初始化数据库表结构
+     * Initialize database schema
      */
     initSchema(): void {
         try {
-            // 读取 schema.sql 文件
+            // Read schema.sql file
             const schemaPath = join(__dirname, "../../schema.sql");
             const schema = readFileSync(schemaPath, "utf-8");
 
-            // 执行 schema 中的所有 SQL 语句
+            // Execute all SQL statements in schema
             this.db.exec(schema);
 
-            console.log("✅ 数据库表结构初始化成功");
+            console.log("✅ Database schema initialized successfully");
         } catch (error) {
-            console.error("❌ 数据库表结构初始化失败:", error);
+            console.error("❌ Database schema initialization failed:", error);
             throw error;
         }
     }
 
     /**
-     * 获取数据库实例
+     * Get database instance
      */
     getDb(): Database.Database {
         return this.db;
     }
 
     /**
-     * 关闭数据库连接
+     * Close database connection
      */
     close(): void {
         this.db.close();
-        console.log("🔒 数据库连接已关闭");
+        console.log("🔒 Database connection closed");
     }
 
     /**
-     * 执行 SQL 查询（适配 D1 的查询接口）
+     * Execute SQL query (adapted for D1 interface)
      */
     async query<T = unknown>(sql: string, params: SQLParam[] = []): Promise<{ results: T[] }> {
         try {
@@ -62,13 +62,13 @@ export class LocalDatabase {
             const results = stmt.all(...params) as T[];
             return { results };
         } catch (error) {
-            console.error("❌ SQL 查询失败:", error);
+            console.error("❌ SQL query failed:", error);
             throw error;
         }
     }
 
     /**
-     * 执行单条查询（适配 D1 的查询接口）
+     * Execute single query (adapted for D1 interface)
      */
     async queryOne<T = unknown>(sql: string, params: SQLParam[] = []): Promise<T | null> {
         try {
@@ -76,13 +76,13 @@ export class LocalDatabase {
             const result = stmt.get(...params) as T | undefined;
             return result || null;
         } catch (error) {
-            console.error("❌ SQL 查询失败:", error);
+            console.error("❌ SQL query failed:", error);
             throw error;
         }
     }
 
     /**
-     * 执行插入/更新/删除操作（适配 D1 的执行接口）
+     * Execute insert/update/delete (adapted for D1 interface)
      */
     async execute(
         sql: string,
@@ -96,13 +96,13 @@ export class LocalDatabase {
                 lastInsertRowid: info.lastInsertRowid,
             };
         } catch (error) {
-            console.error("❌ SQL 执行失败:", error);
+            console.error("❌ SQL execution failed:", error);
             throw error;
         }
     }
 
     /**
-     * 批量执行（适配 D1 的批量接口）
+     * Execute in batch (adapted for D1 interface)
      */
     async batch(statements: Array<{ sql: string; params?: SQLParam[] }>): Promise<unknown[]> {
         const transaction = this.db.transaction((stmts: typeof statements) => {
@@ -115,13 +115,13 @@ export class LocalDatabase {
         try {
             return transaction(statements);
         } catch (error) {
-            console.error("❌ 批量执行失败:", error);
+            console.error("❌ Batch execution failed:", error);
             throw error;
         }
     }
 }
 
-// 导出单例实例
+// Export singleton instance
 let dbInstance: LocalDatabase | null = null;
 
 export function getLocalDb(dbPath?: string): LocalDatabase {

@@ -6,23 +6,23 @@ import rooms from "./routes/rooms";
 import agent from "./routes/agent";
 import { getLocalDb, D1Adapter } from "./db";
 
-// 加载环境变量
+// Load environment variables
 import * as dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 
-// 获取当前文件所在目录
+// Get the current file directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// 加载 server/.env 文件
+// Load server/.env file
 dotenv.config({ path: join(__dirname, "../../.env") });
 
-// 初始化本地数据库
+// Initialize local database
 const localDb = getLocalDb("./tjuecard.db");
 const d1Adapter = new D1Adapter(localDb.getDb());
 
-// 定义环境变量类型
+// Define environment variable types
 type Bindings = {
     DB: D1Adapter;
     JWT_SECRET: string;
@@ -34,12 +34,12 @@ type Bindings = {
     SKIP_EMAIL_VERIFICATION?: string;
 };
 
-// 创建 Hono 应用
+// Create Hono application
 const app = new Hono<{ Bindings: Bindings }>();
 
-// 中间件: 注入数据库和环境变量
+// Middleware: Inject database and environment variables
 app.use("*", async (c, next) => {
-    // 模拟 Cloudflare Workers 的环境
+    // Simulate Cloudflare Workers environment
     c.env = {
         AGENT_SECRET: process.env.AGENT_SECRET || "dev-agent-secret",
         DB: d1Adapter,
@@ -54,10 +54,10 @@ app.use("*", async (c, next) => {
     await next();
 });
 
-// CORS 中间件
+// CORS middleware
 app.use("*", cors());
 
-// 路由
+// Routes
 app.get("/", c => {
     return c.text("TJUEcard Server is running (Local Development Mode)!");
 });
@@ -66,18 +66,18 @@ app.route("/auth", auth);
 app.route("/rooms", rooms);
 app.route("/agent", agent);
 
-// 启动服务器
+// Start the server
 const port = parseInt(process.env.PORT || "3000", 10);
 
-console.log("🚀 TJUEcard 服务器启动中...");
-console.log(`📍 端口: ${port}`);
-console.log("🗄️  数据库: SQLite (本地模式)");
+console.log("🚀 TJUEcard Server starting...");
+console.log(`📍 Port: ${port}`);
+console.log("🗄️  Database: SQLite (Local Mode)");
 
-// 显示开发模式状态
+// Show development mode status
 if (process.env.SKIP_EMAIL_VERIFICATION === "true") {
-    console.log("🔓 开发模式: 已启用（跳过邮箱验证）");
+    console.log("🔓 Dev Mode: Enabled (Skip email verification)");
 } else {
-    console.log("🔒 邮箱验证: 已启用");
+    console.log("🔒 Email Verification: Enabled");
 }
 
 serve({
@@ -85,17 +85,17 @@ serve({
     port,
 });
 
-console.log(`✅ 服务器已启动: http://localhost:${port}`);
+console.log(`✅ Server started: http://localhost:${port}`);
 
-// 优雅关闭
+// Graceful shutdown
 process.on("SIGINT", () => {
-    console.log("\n👋 正在关闭服务器...");
+    console.log("\n👋 Closing server...");
     localDb.close();
     process.exit(0);
 });
 
 process.on("SIGTERM", () => {
-    console.log("\n👋 正在关闭服务器...");
+    console.log("\n👋 Closing server...");
     localDb.close();
     process.exit(0);
 });
