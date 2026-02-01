@@ -62,6 +62,7 @@
                 :title="isEditMode ? '修改房间' : '添加房间'"
                 width="600px"
                 class="add-room-dialog"
+                align-center
                 @closed="resetForm"
             >
                 <el-form label-width="100px" class="add-room-form">
