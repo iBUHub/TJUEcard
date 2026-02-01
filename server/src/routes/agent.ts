@@ -7,7 +7,16 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 /**
  * Generate beautiful HTML email template for low electricity alert
  */
-function generateEmailHtml(roomName: string, electric: number, threshold: number): string {
+/**
+ * Generate beautiful HTML email template for low electricity alert
+ */
+function generateEmailHtml(aliasName: string, fullName: string | null, electric: number, threshold: number): string {
+    const roomInfoHtml = `
+        <div style="color: #666; font-size: 14px; margin: 0 0 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;">
+            <p style="margin: 0;"><strong>房间信息：</strong>${aliasName}${fullName ? ` (${fullName})` : ""}</p>
+        </div>
+    `;
+
     return `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -47,7 +56,7 @@ function generateEmailHtml(roomName: string, electric: number, threshold: number
                                 </tr>
                             </table>
                             <!-- Room Info -->
-                            ${roomName ? `<p style="color: #666; font-size: 14px; margin: 0 0 24px; padding: 16px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #667eea;"><strong>房间：</strong>${roomName}</p>` : ""}
+                            ${roomInfoHtml}
                             <!-- CTA -->
                             <p style="color: #666; font-size: 14px; line-height: 1.6; margin: 0;">
                                 建议您尽快前往充值，以确保用电不受影响。
@@ -151,7 +160,7 @@ app.post("/test-email", async c => {
     }
 
     const subject = "⚡ TJUEcard 邮件功能测试";
-    const html = generateEmailHtml("测试房间（Test Room）", 8.5, 20);
+    const html = generateEmailHtml("我的宿舍", "天大一卡通-32斋-101", 8.5, 20);
 
     const params = new URLSearchParams({
         apiKey: c.env.SEND_CLOUD_API_KEY,
@@ -178,7 +187,15 @@ app.post("/test-email", async c => {
 
 app.post("/poll", async c => {
     // Update agent activity in background
-    c.executionCtx.waitUntil(updateAgentActivity(c));
+    try {
+        if (c.executionCtx) {
+            c.executionCtx.waitUntil(updateAgentActivity(c));
+        } else {
+            throw new Error("No executionCtx");
+        }
+    } catch {
+        updateAgentActivity(c).catch(console.error);
+    }
 
     const limit = 5;
     const now = Math.floor(Date.now() / 1000);
@@ -223,9 +240,18 @@ app.post("/poll", async c => {
 
 app.post("/submit", async c => {
     // Update agent activity in background
-    c.executionCtx.waitUntil(updateAgentActivity(c));
+    try {
+        if (c.executionCtx) {
+            c.executionCtx.waitUntil(updateAgentActivity(c));
+        } else {
+            throw new Error("No executionCtx");
+        }
+    } catch {
+        // Local env fallback
+        updateAgentActivity(c).catch(console.error);
+    }
 
-    const { room_id, success, electricity, message } = await c.req.json();
+    const { room_id, success, electricity, message, full_name } = await c.req.json();
     const now = Math.floor(Date.now() / 1000);
 
     const nextTime = now + 43200; // 12 hours later
@@ -240,10 +266,11 @@ app.post("/submit", async c => {
             last_electricity = ?,
             last_message = ?,
             next_query_time = datetime(?, 'unixepoch'),
+            full_name = COALESCE(?, full_name),
             lock_agent_id = NULL
         WHERE id = ?
     `
-        ).bind(now, success ? "success" : "failed", electricity, message, nextTime, room_id),
+        ).bind(now, success ? "success" : "failed", electricity, message, nextTime, full_name ?? null, room_id),
     ];
 
     if (success && electricity !== null) {
@@ -276,29 +303,52 @@ app.post("/submit", async c => {
     await c.env.DB.batch(batch);
 
     if (success && electricity !== null) {
-        c.executionCtx.waitUntil(checkAndNotify(c.env, room_id, electricity));
+        try {
+            if (c.executionCtx) {
+                c.executionCtx.waitUntil(checkAndNotify(c.env, room_id, electricity));
+            } else {
+                throw new Error("No executionCtx");
+            }
+        } catch {
+            // Local env fallback
+            checkAndNotify(c.env, room_id, electricity).catch(console.error);
+        }
     }
 
     return c.json({ message: "Submitted" });
 });
 
 async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
-    // Get room name for email
-    const room = await env.DB.prepare("SELECT full_name FROM rooms WHERE id = ?")
+    // Get room basic info
+    const room = await env.DB.prepare(
+        "SELECT full_name, system_id, area_id, building_id, floor_id, room_id FROM rooms WHERE id = ?"
+    )
         .bind(roomId)
-        .first<{ full_name: string | null }>();
-    const roomName = room?.full_name || "";
+        .first<{
+            full_name: string | null;
+            system_id: string;
+            area_id: string;
+            building_id: string;
+            floor_id: string;
+            room_id: string;
+        }>();
 
     const subs = await env.DB.prepare(
         `
-        SELECT u.email, s.notification_threshold, unixepoch(s.last_notified_at) as last_notified_at, s.user_id
+        SELECT u.email, s.notification_threshold, s.alias_name, unixepoch(s.last_notified_at) as last_notified_at, s.user_id
         FROM subscriptions s
         JOIN users u ON s.user_id = u.id
         WHERE s.room_id = ? AND s.is_active = 1
     `
     )
         .bind(roomId)
-        .all<{ email: string; notification_threshold: number; last_notified_at: number | null; user_id: number }>();
+        .all<{
+            email: string;
+            notification_threshold: number;
+            alias_name: string | null;
+            last_notified_at: number | null;
+            user_id: number;
+        }>();
 
     const now = Math.floor(Date.now() / 1000);
     const COOLDOWN = 43200; // 12 hours in seconds
@@ -309,17 +359,20 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
         if (!sub.last_notified_at) {
             shouldNotify = true;
         } else {
-            const last = sub.last_notified_at; // It's a number now (converted by unixepoch())
+            const last = sub.last_notified_at;
             if (now - last > COOLDOWN) shouldNotify = true;
         }
 
         if ((sub.notification_threshold === -1 || electric < sub.notification_threshold) && shouldNotify) {
+            const aliasName = sub.alias_name || "未命名房间";
+            const fullName = room?.full_name || null;
+
             console.log(
-                `[Email Alert] To: ${sub.email} | Room: ${roomName} | Level: ${electric} < ${sub.notification_threshold === -1 ? "Always" : sub.notification_threshold}`
+                `[Email Alert] To: ${sub.email} | Alias: ${aliasName} | Full: ${fullName} | Level: ${electric}`
             );
 
-            const subject = "⚡ TJUEcard 电费余额不足提醒";
-            const html = generateEmailHtml(roomName, electric, sub.notification_threshold);
+            const subject = `⚡ TJUEcard 电费预警: ${aliasName}`;
+            const html = generateEmailHtml(aliasName, fullName, electric, sub.notification_threshold);
             const sent = await sendEmail(env, sub.email, subject, html);
 
             if (sent) {

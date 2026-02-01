@@ -327,11 +327,28 @@ const fetchRooms = async () => {
 const submitAddRoom = async () => {
     submitLoading.value = true;
     try {
+        // Construct Full Name from selected options
+        const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name;
+        const dist = districtOptions.value.find(i => i.id === selectedDistrictId.value)?.name;
+        const build = buildingOptions.value.find(i => i.id === selectedBuildingId.value)?.name;
+        const floor = floorOptions.value.find(i => i.id === selectedFloorId.value)?.name;
+        const room = roomOptions.value.find(i => i.id === selectedRoomId.value)?.name;
+
+        // Filter out undefined and empty strings
+        // Exclude 'area' from the full name as requested
+        const nameParts = [sys, dist, build, floor, room].filter(part => part && part.trim());
+        const fullName = nameParts.join('-');
+
+        const payload = {
+            ...addForm.value,
+            full_name: fullName,
+        };
+
         if (isEditMode.value) {
-            await api.put(`/rooms/${editingRoomId.value}`, addForm.value);
+            await api.put(`/rooms/${editingRoomId.value}`, payload);
             ElMessage.success('房间修改成功');
         } else {
-            await api.post('/rooms', addForm.value);
+            await api.post('/rooms', payload);
             ElMessage.success('房间已添加');
         }
         showAddDialog.value = false;

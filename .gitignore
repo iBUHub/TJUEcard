@@ -37,3 +37,10 @@ agent_uuid
 
 # IDE
 .idea/
+
+start_agent_manual.py
+
+.tjuecard_key
+
+TJUEcard_user_config.json
+agent/__init__.py

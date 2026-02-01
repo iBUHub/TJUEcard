@@ -7,7 +7,7 @@
         "postinstall": "npm run install:server && npm run install:web",
         "install:server": "cd server && npm install",
         "install:web": "cd web && npm install",
-        "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\"",
+        "dev": "concurrently \"npm run dev:server\" \"npm run dev:web\" \"python start_agent_manual.py\"",
         "dev:server": "cd server && npm run dev:local",
         "dev:web": "cd web && npm run dev",
         "test": "echo \"Error: no test specified\" && exit 1",

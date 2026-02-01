@@ -23,7 +23,7 @@ app.get("/", async c => {
 
 app.post("/", async c => {
     const user = c.get("user");
-    const { system_id, area_id, building_id, floor_id, room_id, alias_name, notification_threshold } =
+    const { system_id, area_id, building_id, floor_id, room_id, alias_name, notification_threshold, full_name } =
         await c.req.json();
 
     if (!system_id || !room_id) return c.json({ error: "Missing required room parameters" }, 400);
@@ -32,11 +32,13 @@ app.post("/", async c => {
     try {
         await c.env.DB.prepare(
             `
-         INSERT OR IGNORE INTO rooms (system_id, area_id, building_id, floor_id, room_id, next_query_time)
-         VALUES (?, ?, ?, ?, ?, datetime('now'))
+         INSERT INTO rooms (system_id, area_id, building_id, floor_id, room_id, next_query_time, full_name)
+         VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
+         ON CONFLICT(system_id, area_id, building_id, floor_id, room_id) DO UPDATE SET
+            full_name = COALESCE(excluded.full_name, rooms.full_name)
        `
         )
-            .bind(system_id, area_id, building_id, floor_id, room_id)
+            .bind(system_id, area_id, building_id, floor_id, room_id, full_name ?? null)
             .run();
     } catch (e) {
         console.error("Room insert error", e);
@@ -84,7 +86,7 @@ app.delete("/:id", async c => {
 app.put("/:id", async c => {
     const user = c.get("user");
     const oldRoomId = c.req.param("id");
-    const { system_id, area_id, building_id, floor_id, room_id, alias_name, notification_threshold } =
+    const { system_id, area_id, building_id, floor_id, room_id, alias_name, notification_threshold, full_name } =
         await c.req.json();
 
     if (!system_id || !room_id) return c.json({ error: "Missing required room parameters" }, 400);
@@ -93,11 +95,13 @@ app.put("/:id", async c => {
     try {
         await c.env.DB.prepare(
             `
-         INSERT OR IGNORE INTO rooms (system_id, area_id, building_id, floor_id, room_id, next_query_time)
-         VALUES (?, ?, ?, ?, ?, datetime('now'))
+         INSERT INTO rooms (system_id, area_id, building_id, floor_id, room_id, next_query_time, full_name)
+         VALUES (?, ?, ?, ?, ?, datetime('now'), ?)
+         ON CONFLICT(system_id, area_id, building_id, floor_id, room_id) DO UPDATE SET
+            full_name = COALESCE(excluded.full_name, rooms.full_name)
        `
         )
-            .bind(system_id, area_id, building_id, floor_id, room_id)
+            .bind(system_id, area_id, building_id, floor_id, room_id, full_name ?? null)
             .run();
     } catch (e) {
         console.error("Room insert error", e);

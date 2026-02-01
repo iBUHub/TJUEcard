@@ -298,13 +298,15 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
 
     for attempt in range(2):
         try:
-            # Get CSRF Token
+            # Get CSRF Token and Parse Page for Room Names
             page_headers = session.headers.copy()
             if "X-Requested-With" in page_headers:
                 del page_headers["X-Requested-With"]
             page_headers["Referer"] = BASE_DOMAIN
             page_response = session.get(token_page_url, headers=page_headers, timeout=10)
             page_response.raise_for_status()
+            
+            # 1. Extract CSRF Token
             final_csrf_token = extract_csrf_token(page_response.text)
 
             if not final_csrf_token:
@@ -333,16 +335,20 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
 
             # Display and log results
             if result.get("retcode") == 0 or result.get("retcode") == '0':
+                
+                # Priority: Get from JSON (Multi-meter mode only)
                 if result.get("multiflag"):
                     # Multi-meter mode
                     logger.info("Query successful (multi-meter mode)")
-                    elec = result.get("elecRoomData", [{}])[0].get("restElecDegree", 0)
+                    room_data_list = result.get("elecRoomData", [{}])
+                    room_data = room_data_list[0]
+                    elec = room_data.get("restElecDegree", 0)
                 else:
                     # Single meter mode
                     remaining_electricity = result.get("restElecDegree")
                     elec = remaining_electricity
                     logger.info(f"Query successful! Remaining electricity: {remaining_electricity} kWh")
-
+                
                 return {
                     'success': True,
                     'electricity': float(elec),
@@ -511,7 +517,8 @@ class Agent:
                     task['id'],
                     result['success'],
                     result.get('electricity'),
-                    result.get('message')
+                    result.get('message'),
+                    result.get('full_name')
                 )
             
             time.sleep(5)
