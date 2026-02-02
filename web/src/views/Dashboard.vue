@@ -3,7 +3,10 @@
         <el-header class="dashboard-header">
             <div style="display: flex; justify-content: space-between; align-items: center; height: 100%">
                 <h3 class="header-title">TJUEcard 仪表盘</h3>
-                <el-button class="logout-btn" @click="logout">退出登录</el-button>
+                <div class="header-right">
+                    <el-button class="theme-toggle-btn" circle :icon="themeIcon" @click="toggleTheme" />
+                    <el-button class="logout-btn" @click="logout">退出登录</el-button>
+                </div>
             </div>
         </el-header>
         <el-main>
@@ -235,7 +238,11 @@ import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { spacingText } from '../utils/pangu';
+import { useTheme } from '../composables/useTheme';
+import { Moon, Sunny, Monitor } from '@element-plus/icons-vue';
 
+const { theme, setupTheme } = useTheme();
+setupTheme();
 const router = useRouter();
 const rooms = ref([]);
 const loading = ref(false);
@@ -497,6 +504,31 @@ const logout = () => {
     router.push('/login');
 };
 
+const themeIcon = computed(() => {
+    switch (theme.value) {
+        case 'light':
+            return Sunny;
+        case 'dark':
+            return Moon;
+        default:
+            return Monitor;
+    }
+});
+
+const toggleTheme = () => {
+    switch (theme.value) {
+        case 'light':
+            theme.value = 'dark';
+            break;
+        case 'dark':
+            theme.value = 'auto';
+            break;
+        default:
+            theme.value = 'light';
+            break;
+    }
+};
+
 let resizeObserver: ResizeObserver | null = null;
 
 const checkScrollbar = () => {
@@ -563,7 +595,7 @@ onUnmounted(() => {
 <style scoped>
 .layout-container {
     height: 100vh;
-    background: linear-gradient(to bottom, #f5f7fa 0%, #e8ecf1 100%);
+    background: var(--app-bg);
     display: flex;
     flex-direction: column;
 }
@@ -575,9 +607,15 @@ onUnmounted(() => {
 }
 
 .dashboard-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-bottom: none;
+    background: var(--header-bg);
+    border-bottom: var(--header-border);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .header-title {
@@ -599,6 +637,18 @@ onUnmounted(() => {
     border-color: rgba(255, 255, 255, 0.5);
 }
 
+.theme-toggle-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+    font-size: 18px;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
+}
+
 .actions {
     margin-bottom: 20px;
 }
@@ -616,23 +666,39 @@ onUnmounted(() => {
 }
 
 .rooms-table {
-    background: #fff;
+    background: var(--table-bg);
     border-radius: 8px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    --el-table-bg-color: var(--table-bg); /* Override Element Plus var */
+    --el-table-tr-bg-color: var(--table-bg); /* Override Element Plus var */
+    --el-table-header-bg-color: transparent; /* We handle header bg on wrapper */
+}
+
+:deep(.rooms-table .el-table__row),
+:deep(.rooms-table .el-table__cell) {
+    transition: none !important;
 }
 
 :deep(.rooms-table .el-table__header-wrapper) {
-    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    background: var(--table-header-bg);
 }
 
-:deep(.rooms-table .el-table__row:hover) {
-    background-color: #f5f7fa;
+:deep(.rooms-table .el-table__empty-block) {
+    background-color: var(--table-bg) !important;
+}
+
+:deep(.el-loading-mask) {
+    background-color: var(--loading-mask-bg) !important;
+}
+
+:deep(.rooms-table .el-table__row:hover > td) {
+    background-color: var(--table-row-hover-bg) !important;
 }
 
 :deep(.el-dialog) {
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--el-box-shadow);
 }
 
 :deep(.el-dialog__title) {
@@ -741,6 +807,11 @@ onUnmounted(() => {
     }
 }
 
+:deep(.add-room-dialog .el-dialog__footer) {
+    background: var(--el-bg-color) !important;
+    border-top: 1px solid var(--el-border-color-lighter) !important;
+}
+
 .dashboard-footer {
     position: fixed;
     bottom: 0;
@@ -761,20 +832,22 @@ onUnmounted(() => {
     align-items: center;
     gap: 12px;
     padding: 10px 24px;
-    background: rgba(255, 255, 255, 0.85);
+    background: var(--footer-bg);
     border-radius: 50px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: var(--footer-border);
     pointer-events: auto;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition:
+        transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     max-width: 70%;
     margin: 0 auto;
 }
 
 .footer-content:hover {
     transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--footer-hover-bg);
     box-shadow: 0 12px 40px rgba(102, 126, 234, 0.2);
 }
 
@@ -784,7 +857,7 @@ onUnmounted(() => {
 }
 
 .footer-text {
-    color: #606266;
+    color: var(--el-text-color-regular);
     font-size: 14px;
 }
 

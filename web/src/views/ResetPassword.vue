@@ -133,7 +133,7 @@ onUnmounted(() => {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--header-bg);
     animation: gradientShift 15s ease infinite;
     background-size: 200% 200%;
 }
@@ -155,8 +155,8 @@ onUnmounted(() => {
     border-radius: 16px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--card-bg);
+    border: var(--card-border);
     animation: fadeInUp 0.6s ease-out;
 }
 
@@ -189,6 +189,10 @@ onUnmounted(() => {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+:global(html.dark) :deep(.input-field .el-input__wrapper) {
+    background-color: var(--el-input-bg-color);
+}
+
 :deep(.input-field .el-input__wrapper:hover) {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
@@ -212,6 +216,10 @@ onUnmounted(() => {
     border-radius: 8px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+:global(html.dark) :deep(.verification-input .el-input__wrapper) {
+    background-color: var(--el-input-bg-color);
 }
 
 :deep(.verification-input .el-input__wrapper:hover) {
