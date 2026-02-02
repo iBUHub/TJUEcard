@@ -615,7 +615,7 @@ onUnmounted(() => {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
 }
 
 .header-title {
