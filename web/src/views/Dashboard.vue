@@ -288,7 +288,9 @@ const parseUtcDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return null;
     // Assume DB returns 'YYYY-MM-DD HH:mm:ss' in UTC
     // Replace space with T and append Z to ensure it's treated as UTC
-    return new Date(dateStr.replace(' ', 'T') + 'Z');
+    const date = new Date(dateStr.replace(' ', 'T') + 'Z');
+    if (isNaN(date.getTime())) return null;
+    return date;
 };
 
 const isQuerying = (row: Room) => {
