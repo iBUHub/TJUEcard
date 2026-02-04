@@ -282,11 +282,7 @@ const addForm = ref({
 
 // Time utilities
 const now = ref(new Date());
-
-// Update 'now' every minute to refresh status
-setInterval(() => {
-    now.value = new Date();
-}, 60000);
+let timer: number | undefined;
 
 const parseUtcDate = (dateStr: string) => {
     if (!dateStr) return null;
@@ -624,6 +620,11 @@ onMounted(() => {
     fetchRooms();
     loadOptions();
 
+    // Update 'now' every minute to refresh status
+    timer = window.setInterval(() => {
+        now.value = new Date();
+    }, 60000);
+
     nextTick(() => {
         const scrollWrap = document.querySelector('.rooms-table .el-table__body-wrapper .el-scrollbar__wrap');
         if (scrollWrap) {
@@ -645,6 +646,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    if (timer) {
+        clearInterval(timer);
+    }
     if (resizeObserver) {
         resizeObserver.disconnect();
     }
