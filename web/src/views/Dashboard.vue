@@ -12,6 +12,7 @@
         <el-main>
             <div class="actions">
                 <el-button type="primary" class="add-room-btn" @click="showAddDialog = true">添加房间</el-button>
+                <el-button :icon="Refresh" circle class="refresh-btn" :loading="loading" @click="fetchRooms" />
             </div>
 
             <el-table v-loading="loading" :data="rooms" class="rooms-table" stripe>
@@ -22,23 +23,25 @@
                 </el-table-column>
                 <el-table-column label="状态">
                     <template #default="scope">
-                        <el-tag
-                            :type="
-                                scope.row.last_query_status === 'success'
-                                    ? 'success'
-                                    : scope.row.last_query_status === 'failed'
-                                      ? 'danger'
-                                      : 'info'
-                            "
-                        >
-                            {{
-                                scope.row.last_query_status === 'success'
-                                    ? '查询成功'
-                                    : scope.row.last_query_status === 'failed'
-                                      ? '查询失败'
-                                      : '等待查询'
-                            }}
+                        <el-tag :type="getStatusType(scope.row)">
+                            <span v-if="isQuerying(scope.row)"> 正在查询 </span>
+                            <span v-else>
+                                {{
+                                    scope.row.last_query_status === 'success'
+                                        ? '查询成功'
+                                        : scope.row.last_query_status === 'failed'
+                                          ? '查询失败'
+                                          : '等待查询'
+                                }}
+                            </span>
                         </el-tag>
+                    </template>
+                </el-table-column>
+                <el-table-column label="下次更新">
+                    <template #default="scope">
+                        <span style="font-feature-settings: 'tnum'">{{
+                            formatNextTime(scope.row.next_query_time)
+                        }}</span>
                     </template>
                 </el-table-column>
                 <el-table-column prop="last_electricity" label="电量 (kWh)">
@@ -51,7 +54,7 @@
                         {{ scope.row.notification_threshold === -1 ? '始终通知' : scope.row.notification_threshold }}
                     </template>
                 </el-table-column>
-                <el-table-column label="操作" width="150">
+                <el-table-column label="操作" width="140">
                     <template #default="scope">
                         <el-button type="primary" size="small" @click="openEditDialog(scope.row)">修改</el-button>
                         <el-button type="danger" size="small" @click="deleteRoom(scope.row.id)">删除</el-button>
@@ -239,16 +242,32 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { spacingText } from '../utils/pangu';
 import { useTheme } from '../composables/useTheme';
-import { Moon, Sunny, Monitor } from '@element-plus/icons-vue';
+import { Moon, Sunny, Monitor, Refresh } from '@element-plus/icons-vue';
+
+interface Room {
+    id: number;
+    alias_name: string | null;
+    full_name?: string | null;
+    system_id: string;
+    area_id: string;
+    building_id: string | null;
+    floor_id: string | null;
+    room_id: string;
+    notification_threshold: number;
+    last_electricity?: number | null;
+    last_query_status?: string | null;
+    next_query_time?: string | null;
+    last_query_time?: string | null;
+}
 
 const { theme, setupTheme } = useTheme();
 setupTheme();
 const router = useRouter();
-const rooms = ref([]);
+const rooms = ref<Room[]>([]);
 const loading = ref(false);
 const showAddDialog = ref(false);
 const isEditMode = ref(false);
-const editingRoomId = ref('');
+const editingRoomId = ref<number | ''>('');
 const submitLoading = ref(false);
 
 const addForm = ref({
@@ -260,6 +279,45 @@ const addForm = ref({
     room_id: '',
     system_id: '',
 });
+
+// Time utilities
+const now = ref(new Date());
+let timer: number | undefined;
+
+const parseUtcDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return null;
+    // Assume DB returns 'YYYY-MM-DD HH:mm:ss' in UTC
+    // Replace space with T and append Z to ensure it's treated as UTC
+    const date = new Date(dateStr.replace(' ', 'T') + 'Z');
+    if (isNaN(date.getTime())) return null;
+    return date;
+};
+
+const isQuerying = (row: Room) => {
+    if (!row.next_query_time) return false;
+    const nextTime = parseUtcDate(row.next_query_time);
+    return nextTime ? now.value >= nextTime : false;
+};
+
+const getStatusType = (row: Room) => {
+    if (isQuerying(row)) return ''; // Default/Primary color for querying
+    if (row.last_query_status === 'success') return 'success';
+    if (row.last_query_status === 'failed') return 'danger';
+    return 'info';
+};
+
+const formatNextTime = (timeStr: string | null | undefined) => {
+    if (!timeStr) return '-';
+    const date = parseUtcDate(timeStr);
+    if (!date) return '-';
+
+    // Format: MM-DD HH:mm
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${month}-${day} ${hours}:${minutes}`;
+};
 
 interface RoomOption {
     id: string;
@@ -376,6 +434,7 @@ const loadOptions = async () => {
 
 const fetchRooms = async () => {
     loading.value = true;
+    now.value = new Date(); // Update time reference
     try {
         const res = await api.get('/rooms');
         rooms.value = res.data;
@@ -426,8 +485,7 @@ const submitAddRoom = async () => {
     }
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const openEditDialog = (room: any) => {
+const openEditDialog = (room: Room) => {
     isEditMode.value = true;
     editingRoomId.value = room.id;
 
@@ -483,7 +541,7 @@ const resetForm = () => {
     };
 };
 
-const deleteRoom = (id: string) => {
+const deleteRoom = (id: number) => {
     ElMessageBox.confirm('确定要取消订阅吗？', '警告', {
         cancelButtonText: '取消',
         confirmButtonText: '确定',
@@ -564,6 +622,11 @@ onMounted(() => {
     fetchRooms();
     loadOptions();
 
+    // Update 'now' every minute to refresh status
+    timer = window.setInterval(() => {
+        now.value = new Date();
+    }, 60000);
+
     nextTick(() => {
         const scrollWrap = document.querySelector('.rooms-table .el-table__body-wrapper .el-scrollbar__wrap');
         if (scrollWrap) {
@@ -585,6 +648,9 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+    if (timer) {
+        clearInterval(timer);
+    }
     if (resizeObserver) {
         resizeObserver.disconnect();
     }
@@ -651,18 +717,41 @@ onUnmounted(() => {
 
 .actions {
     margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.refresh-btn {
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color);
+    color: var(--el-text-color-regular);
+    box-shadow: var(--el-box-shadow-light);
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+}
+
+.refresh-btn:hover {
+    color: var(--refresh-btn-hover-color);
+    border-color: var(--refresh-btn-hover-color);
+    transform: rotate(180deg);
+    box-shadow: 0 4px 12px var(--refresh-btn-hover-shadow);
 }
 
 .add-room-btn {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-btn-bg);
     border: none;
-    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 2px 8px var(--primary-btn-shadow);
     transition: all 0.3s ease;
 }
 
 .add-room-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.5);
+    box-shadow: 0 4px 12px var(--primary-btn-hover-shadow);
 }
 
 .rooms-table {

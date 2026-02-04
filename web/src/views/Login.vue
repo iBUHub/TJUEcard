@@ -169,15 +169,15 @@ box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     border-radius: 8px;
     font-size: 16px;
     font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-btn-bg);
     border: none;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 15px var(--primary-btn-shadow);
 }
 
 .login-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    box-shadow: 0 6px 20px var(--primary-btn-hover-shadow);
 }
 
 .login-button:active {
