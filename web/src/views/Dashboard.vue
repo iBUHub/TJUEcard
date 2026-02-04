@@ -284,7 +284,7 @@ const addForm = ref({
 const now = ref(new Date());
 let timer: number | undefined;
 
-const parseUtcDate = (dateStr: string) => {
+const parseUtcDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return null;
     // Assume DB returns 'YYYY-MM-DD HH:mm:ss' in UTC
     // Replace space with T and append Z to ensure it's treated as UTC
@@ -304,7 +304,7 @@ const getStatusType = (row: Room) => {
     return 'info';
 };
 
-const formatNextTime = (timeStr: string) => {
+const formatNextTime = (timeStr: string | null | undefined) => {
     if (!timeStr) return '-';
     const date = parseUtcDate(timeStr);
     if (!date) return '-';
