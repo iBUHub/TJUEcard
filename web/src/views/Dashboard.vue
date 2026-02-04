@@ -24,7 +24,7 @@
                 <el-table-column label="状态">
                     <template #default="scope">
                         <el-tag :type="getStatusType(scope.row)">
-                            <span v-if="isQuerying(scope.row)" class="flex-center"> 正在查询 </span>
+                            <span v-if="isQuerying(scope.row)"> 正在查询 </span>
                             <span v-else>
                                 {{
                                     scope.row.last_query_status === 'success'
