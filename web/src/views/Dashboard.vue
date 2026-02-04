@@ -503,16 +503,16 @@ const openEditDialog = (room: Room) => {
         selectedDistrictId.value = district.id;
     }
 
-    selectedBuildingId.value = room.building_id;
-    selectedFloorId.value = room.floor_id;
+    selectedBuildingId.value = room.building_id || '';
+    selectedFloorId.value = room.floor_id || '';
     selectedRoomId.value = room.room_id;
 
     // Pre-fill form
     addForm.value = {
-        alias_name: room.alias_name,
+        alias_name: room.alias_name || '',
         area_id: room.area_id,
-        building_id: room.building_id,
-        floor_id: room.floor_id,
+        building_id: room.building_id || '',
+        floor_id: room.floor_id || '',
         notification_threshold: room.notification_threshold,
         room_id: room.room_id,
         system_id: room.system_id,
