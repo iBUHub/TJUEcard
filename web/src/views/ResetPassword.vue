@@ -237,14 +237,14 @@ onUnmounted(() => {
     border-radius: 8px;
     font-size: 14px;
     font-weight: 500;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-btn-bg);
     border: none;
     transition: all 0.3s ease;
 }
 
 .send-code-button:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 12px var(--primary-btn-hover-shadow);
 }
 
 .send-code-button:disabled {
@@ -258,15 +258,15 @@ onUnmounted(() => {
     border-radius: 8px;
     font-size: 16px;
     font-weight: 600;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-btn-bg);
     border: none;
     transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 4px 15px var(--primary-btn-shadow);
 }
 
 .register-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    box-shadow: 0 6px 20px var(--primary-btn-hover-shadow);
 }
 
 .register-button:active {

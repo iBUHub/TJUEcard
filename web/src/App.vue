@@ -24,6 +24,11 @@ setupTheme();
     --table-header-bg: linear-gradient(to right, #f8f9fa, #e9ecef);
     --table-row-hover-bg: #f5f7fa;
     --loading-mask-bg: rgba(255, 255, 255, 0.9);
+    --refresh-btn-hover-color: #764ba2;
+    --refresh-btn-hover-shadow: rgba(118, 75, 162, 0.2);
+    --primary-btn-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --primary-btn-shadow: rgba(102, 126, 234, 0.3);
+    --primary-btn-hover-shadow: rgba(102, 126, 234, 0.5);
 
     /* Global Element Defaults */
     --el-text-color-primary: #303133;
@@ -43,6 +48,11 @@ html.dark {
     --table-header-bg: linear-gradient(to right, #374151, #1f2937);
     --table-row-hover-bg: rgba(255, 255, 255, 0.03);
     --loading-mask-bg: rgba(0, 0, 0, 0.8);
+    --refresh-btn-hover-color: #a29bfe;
+    --refresh-btn-hover-shadow: rgba(162, 155, 254, 0.4);
+    --primary-btn-bg: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    --primary-btn-shadow: rgba(59, 130, 246, 0.3);
+    --primary-btn-hover-shadow: rgba(59, 130, 246, 0.5);
 }
 
 body {
