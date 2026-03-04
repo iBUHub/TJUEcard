@@ -37,12 +37,21 @@ def setup_logger(logger_name='TJUEcardAgent'):
     # Avoid duplicate handlers
     if not logger.handlers:
         import sys
-        # Console handler
-        console_handler = logging.StreamHandler(sys.stdout)
+        import io
+
+        # Console handler with UTF-8 encoding
+        # Wrap stdout to handle UTF-8 properly on Windows (where default is GBK)
+        try:
+            utf8_stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            console_handler = logging.StreamHandler(utf8_stdout)
+        except (AttributeError, io.UnsupportedOperation):
+            # Fallback if stdout.buffer is not available
+            console_handler = logging.StreamHandler(sys.stdout)
+
         console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
         console_handler.setFormatter(console_formatter)
         logger.addHandler(console_handler)
-        
+
         # File handler with UTF-8 encoding
         try:
             file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
@@ -332,8 +341,6 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
             query_response = session.post(QUERY_URL, data=query_payload, headers=query_headers, timeout=10)
             query_response.raise_for_status()
 
-            query_response.encoding = 'gb18030'
-
             try:
                 result = query_response.json()
             except json.JSONDecodeError:
@@ -343,7 +350,7 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
 
             # Display and log results
             if result.get("retcode") == 0 or result.get("retcode") == '0':
-                
+
                 # Priority: Get from JSON (Multi-meter mode only)
                 if result.get("multiflag"):
                     # Multi-meter mode
@@ -356,7 +363,7 @@ def query_electricity(session: requests.Session, task: dict, username: str, pass
                     remaining_electricity = result.get("restElecDegree")
                     elec = remaining_electricity
                     logger.info(f"Query successful! Remaining electricity: {remaining_electricity} kWh")
-                
+
                 return {
                     'success': True,
                     'electricity': float(elec),

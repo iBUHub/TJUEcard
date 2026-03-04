@@ -10,10 +10,10 @@ app.get("/", async c => {
     const user = c.get("user");
     const rooms = await c.env.DB.prepare(
         `
-     SELECT r.*, s.alias_name, s.notification_threshold 
-     FROM subscriptions s 
-     JOIN rooms r ON s.room_id = r.id 
-     WHERE s.user_id = ? AND s.is_active = 1
+     SELECT r.*, s.alias_name, s.notification_threshold, s.is_active
+     FROM subscriptions s
+     JOIN rooms r ON s.room_id = r.id
+     WHERE s.user_id = ?
    `
     )
         .bind(user.id)
@@ -98,6 +98,29 @@ app.post("/", async c => {
     }
 
     return c.json({ message: "房间添加成功", room_id: room.id });
+});
+
+app.patch("/:id/toggle", async c => {
+    const user = c.get("user");
+    const roomId = c.req.param("id");
+
+    // Get current status
+    const subscription = await c.env.DB.prepare("SELECT is_active FROM subscriptions WHERE user_id = ? AND room_id = ?")
+        .bind(user.id, roomId)
+        .first<{ is_active: number }>();
+
+    if (!subscription) {
+        return c.json({ error: "订阅不存在" }, 404);
+    }
+
+    const newStatus = subscription.is_active === 1 ? 0 : 1;
+
+    // Toggle status
+    await c.env.DB.prepare("UPDATE subscriptions SET is_active = ? WHERE user_id = ? AND room_id = ?")
+        .bind(newStatus, user.id, roomId)
+        .run();
+
+    return c.json({ is_active: newStatus, message: newStatus === 1 ? "订阅已开启" : "订阅已关闭" });
 });
 
 app.delete("/:id", async c => {
