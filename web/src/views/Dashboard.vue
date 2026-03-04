@@ -54,6 +54,16 @@
                         {{ scope.row.notification_threshold === -1 ? '始终通知' : scope.row.notification_threshold }}
                     </template>
                 </el-table-column>
+                <el-table-column label="订阅状态">
+                    <template #default="scope">
+                        <el-switch
+                            v-model="scope.row.is_active"
+                            :active-value="1"
+                            :inactive-value="0"
+                            @change="toggleSubscription(scope.row)"
+                        />
+                    </template>
+                </el-table-column>
                 <el-table-column label="操作" width="140">
                     <template #default="scope">
                         <el-button type="primary" size="small" @click="openEditDialog(scope.row)">修改</el-button>
@@ -258,6 +268,7 @@ interface Room {
     last_query_status?: string | null;
     next_query_time?: string | null;
     last_query_time?: string | null;
+    is_active?: number;
 }
 
 const { theme, setupTheme } = useTheme();
@@ -539,6 +550,20 @@ const resetForm = () => {
         room_id: '',
         system_id: '',
     };
+};
+
+const toggleSubscription = async (room: Room) => {
+    try {
+        const res = await api.patch(`/rooms/${room.id}/toggle`);
+        ElMessage.success(res.data.message);
+        // Update local state
+        room.is_active = res.data.is_active;
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ElMessage.error((e as any).response?.data?.error || '切换订阅状态失败');
+        // Revert the switch state on error
+        room.is_active = room.is_active === 1 ? 0 : 1;
+    }
 };
 
 const deleteRoom = (id: number) => {
