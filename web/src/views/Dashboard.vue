@@ -235,6 +235,7 @@
                                         v-model="notifyForm.notify_email_enabled"
                                         :active-value="1"
                                         :inactive-value="0"
+                                        :disabled="notifyLoading || notifySaving || !notifyReady"
                                     />
                                 </div>
                                 <div class="form-hint">
@@ -261,6 +262,7 @@
                                     v-model="notifyForm.dingtalk_webhook_url"
                                     placeholder="https://oapi.dingtalk.com/robot/send?access_token=..."
                                     clearable
+                                    :disabled="notifyLoading || notifySaving || !notifyReady"
                                 />
                                 <div class="form-hint">
                                     填写钉钉群“机器人”提供的 webhook 地址，保存并开启后会立即发送一条开启通知。如何获取
@@ -282,7 +284,9 @@
                                         v-model="notifyForm.notify_dingtalk_enabled"
                                         :active-value="1"
                                         :inactive-value="0"
-                                        :disabled="dingtalkSwitchDisabled"
+                                        :disabled="
+                                            dingtalkSwitchDisabled || notifyLoading || notifySaving || !notifyReady
+                                        "
                                     />
                                 </div>
                                 <div class="form-hint">
@@ -300,7 +304,13 @@
                 <template #footer>
                     <span class="dialog-footer">
                         <el-button @click="showNotifyDialog = false">取消</el-button>
-                        <el-button type="primary" :loading="notifySaving" @click="saveNotifySettings">保存</el-button>
+                        <el-button
+                            type="primary"
+                            :loading="notifySaving"
+                            :disabled="notifyLoading || notifySaving || !notifyReady"
+                            @click="saveNotifySettings"
+                            >保存</el-button
+                        >
                     </span>
                 </template>
             </el-dialog>
@@ -377,6 +387,7 @@ const submitLoading = ref(false);
 const showNotifyDialog = ref(false);
 const notifyLoading = ref(false);
 const notifySaving = ref(false);
+const notifyReady = ref(false);
 const notifyForm = ref({
     dingtalk_webhook_url: '',
     notify_dingtalk_enabled: 0 as 0 | 1,
@@ -394,14 +405,17 @@ watch(
 
 const loadNotifySettings = async () => {
     notifyLoading.value = true;
+    notifyReady.value = false;
     try {
         const res = await api.get('/user/notification-settings');
         notifyForm.value.notify_email_enabled = res.data.notify_email_enabled ? 1 : 0;
         notifyForm.value.notify_dingtalk_enabled = res.data.notify_dingtalk_enabled ? 1 : 0;
         notifyForm.value.dingtalk_webhook_url = res.data.dingtalk_webhook_url || '';
+        notifyReady.value = true;
     } catch (e) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ElMessage.error((e as any).response?.data?.error || '加载通知设置失败');
+        notifyReady.value = false;
     } finally {
         notifyLoading.value = false;
     }
@@ -409,15 +423,18 @@ const loadNotifySettings = async () => {
 
 const openNotifyDialog = async () => {
     showNotifyDialog.value = true;
+    notifyReady.value = false;
     await loadNotifySettings();
 };
 
 const notifyDialogClosed = () => {
     notifySaving.value = false;
     notifyLoading.value = false;
+    notifyReady.value = false;
 };
 
 const saveNotifySettings = async () => {
+    if (notifyLoading.value || notifySaving.value || !notifyReady.value) return;
     if (notifyForm.value.notify_dingtalk_enabled === 1 && !notifyForm.value.dingtalk_webhook_url.trim()) {
         ElMessage.error('请先填写 Webhook URL');
         return;
