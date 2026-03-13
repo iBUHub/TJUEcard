@@ -193,9 +193,13 @@
                         ></el-input>
                     </el-form-item>
                     <el-form-item label="阈值">
-                        <el-input-number v-model="addForm.notification_threshold" :min="-1" :step="1"></el-input-number>
-                        <div style="font-size: 12px; color: #999; line-height: 1.2; margin-top: 5px">
-                            电量低于此值时发送邮件提醒。设置 -1 为始终发送。
+                        <div class="threshold-field">
+                            <el-input-number
+                                v-model="addForm.notification_threshold"
+                                :min="-1"
+                                :step="1"
+                            ></el-input-number>
+                            <div class="threshold-hint">电量低于此值时发送邮件提醒。设置 -1 为始终发送。</div>
                         </div>
                     </el-form-item>
                 </el-form>
@@ -929,6 +933,19 @@ onUnmounted(() => {
 .notify-section-divider > span {
     padding: 0 2px;
     white-space: nowrap;
+}
+
+.threshold-field {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.threshold-hint {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.2;
 }
 
 .header-title {
