@@ -54,6 +54,14 @@
 
    ![][guide-03]
 
+4. **配置钉钉通知（可选）**
+   TJUEcard 支持钉钉群机器人通知。你可以在「通知设置」中填写钉钉机器人 Webhook 并开启钉钉通知。详细教程见：
+   https://github.com/iBUHub/TJUEcard/issues/12
+
+5. **配置微信通知（可选）**
+   你可以将 `@tju.edu.cn` 邮箱自动转发到 QQ 邮箱，并在微信开启“QQ 邮箱提醒”，从而在微信接收通知。详细教程见：
+   https://github.com/iBUHub/TJUEcard/issues/13
+
 ## 💻 本地开发
 
 如果您希望在本地环境中运行或贡献代码，请参考以下步骤：

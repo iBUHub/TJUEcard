@@ -37,6 +37,7 @@ agent_uuid
 
 # IDE
 .idea/
+.claude/
 
 
 

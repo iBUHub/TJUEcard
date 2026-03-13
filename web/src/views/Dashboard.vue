@@ -5,6 +5,7 @@
                 <h3 class="header-title">TJUEcard 仪表盘</h3>
                 <div class="header-right">
                     <el-button class="theme-toggle-btn" circle :icon="themeIcon" @click="toggleTheme" />
+                    <el-button class="notify-settings-btn" circle :icon="Setting" @click="openNotifyDialog" />
                     <el-button class="logout-btn" @click="logout">退出登录</el-button>
                 </div>
             </div>
@@ -192,9 +193,13 @@
                         ></el-input>
                     </el-form-item>
                     <el-form-item label="阈值">
-                        <el-input-number v-model="addForm.notification_threshold" :min="-1" :step="1"></el-input-number>
-                        <div style="font-size: 12px; color: #999; line-height: 1.2; margin-top: 5px">
-                            电量低于此值时发送邮件提醒。设置 -1 为始终发送。
+                        <div class="threshold-field">
+                            <el-input-number
+                                v-model="addForm.notification_threshold"
+                                :min="-1"
+                                :step="1"
+                            ></el-input-number>
+                            <div class="threshold-hint">电量低于此值时发送邮件提醒。设置 -1 为始终发送。</div>
                         </div>
                     </el-form-item>
                 </el-form>
@@ -207,6 +212,104 @@
                             :disabled="!selectedRoomId"
                             @click="submitAddRoom"
                             >确认</el-button
+                        >
+                    </span>
+                </template>
+            </el-dialog>
+
+            <!-- Notification Settings Dialog -->
+            <el-dialog
+                v-model="showNotifyDialog"
+                title="通知设置"
+                width="560px"
+                class="notify-settings-dialog"
+                align-center
+                @closed="notifyDialogClosed"
+            >
+                <div v-loading="notifyLoading">
+                    <el-form class="notify-form" label-width="140px" label-position="left">
+                        <el-form-item label="邮箱通知">
+                            <div class="notify-field">
+                                <div class="notify-switch-row">
+                                    <el-switch
+                                        v-model="notifyForm.notify_email_enabled"
+                                        :active-value="1"
+                                        :inactive-value="0"
+                                        :disabled="notifyLoading || notifySaving || !notifyReady"
+                                    />
+                                </div>
+                                <div class="form-hint">
+                                    想在微信收到通知？可通过邮箱转发到 QQ 邮箱并在微信开启“QQ 邮箱提醒”：
+                                    <a
+                                        href="https://github.com/iBUHub/TJUEcard/issues/13"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        >查看教程</a
+                                    >
+                                </div>
+                            </div>
+                        </el-form-item>
+                    </el-form>
+
+                    <div class="notify-section-divider">
+                        <span>钉钉群机器人</span>
+                    </div>
+
+                    <el-form class="notify-form" label-width="140px" label-position="left">
+                        <el-form-item label="Webhook URL">
+                            <div class="notify-field">
+                                <el-input
+                                    v-model="notifyForm.dingtalk_webhook_url"
+                                    placeholder="https://oapi.dingtalk.com/robot/send?access_token=..."
+                                    clearable
+                                    :disabled="notifyLoading || notifySaving || !notifyReady"
+                                />
+                                <div class="form-hint">
+                                    填写钉钉群“机器人”提供的 webhook 地址，保存并开启后会立即发送一条开启通知。如何获取
+                                    Webhook：
+                                    <a
+                                        href="https://github.com/iBUHub/TJUEcard/issues/12"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        >查看教程</a
+                                    >
+                                </div>
+                            </div>
+                        </el-form-item>
+
+                        <el-form-item label="钉钉通知">
+                            <div class="notify-field">
+                                <div class="notify-switch-row">
+                                    <el-switch
+                                        v-model="notifyForm.notify_dingtalk_enabled"
+                                        :active-value="1"
+                                        :inactive-value="0"
+                                        :disabled="
+                                            dingtalkSwitchDisabled || notifyLoading || notifySaving || !notifyReady
+                                        "
+                                    />
+                                </div>
+                                <div class="form-hint">
+                                    {{
+                                        dingtalkSwitchDisabled
+                                            ? '先填写 Webhook URL 才能开启钉钉通知'
+                                            : '开启后电量预警会发送到钉钉群'
+                                    }}
+                                </div>
+                            </div>
+                        </el-form-item>
+                    </el-form>
+                </div>
+
+                <template #footer>
+                    <span class="dialog-footer">
+                        <el-button @click="showNotifyDialog = false">取消</el-button>
+                        <el-button
+                            type="primary"
+                            :loading="notifySaving"
+                            :disabled="notifyLoading || notifySaving || !notifyReady"
+                            @click="saveNotifySettings"
+                            >保存</el-button
                         >
                     </span>
                 </template>
@@ -252,7 +355,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { spacingText } from '../utils/pangu';
 import { useTheme } from '../composables/useTheme';
-import { Moon, Sunny, Monitor, Refresh } from '@element-plus/icons-vue';
+import { Moon, Sunny, Monitor, Refresh, Setting } from '@element-plus/icons-vue';
 
 interface Room {
     id: number;
@@ -280,6 +383,86 @@ const showAddDialog = ref(false);
 const isEditMode = ref(false);
 const editingRoomId = ref<number | ''>('');
 const submitLoading = ref(false);
+
+const showNotifyDialog = ref(false);
+const notifyLoading = ref(false);
+const notifySaving = ref(false);
+const notifyReady = ref(false);
+const notifyForm = ref({
+    dingtalk_webhook_url: '',
+    notify_dingtalk_enabled: 0 as 0 | 1,
+    notify_email_enabled: 1 as 0 | 1,
+});
+
+const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
+
+watch(
+    () => notifyForm.value.dingtalk_webhook_url,
+    v => {
+        if (!v || !v.trim()) notifyForm.value.notify_dingtalk_enabled = 0;
+    }
+);
+
+const loadNotifySettings = async () => {
+    notifyLoading.value = true;
+    notifyReady.value = false;
+    try {
+        const res = await api.get('/user/notification-settings');
+        notifyForm.value.notify_email_enabled = res.data.notify_email_enabled ? 1 : 0;
+        notifyForm.value.notify_dingtalk_enabled = res.data.notify_dingtalk_enabled ? 1 : 0;
+        notifyForm.value.dingtalk_webhook_url = res.data.dingtalk_webhook_url || '';
+        notifyReady.value = true;
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ElMessage.error((e as any).response?.data?.error || '加载通知设置失败');
+        notifyReady.value = false;
+    } finally {
+        notifyLoading.value = false;
+    }
+};
+
+const openNotifyDialog = async () => {
+    showNotifyDialog.value = true;
+    notifyReady.value = false;
+    await loadNotifySettings();
+};
+
+const notifyDialogClosed = () => {
+    notifySaving.value = false;
+    notifyLoading.value = false;
+    notifyReady.value = false;
+};
+
+const saveNotifySettings = async () => {
+    if (notifyLoading.value || notifySaving.value || !notifyReady.value) return;
+    if (notifyForm.value.notify_dingtalk_enabled === 1 && !notifyForm.value.dingtalk_webhook_url.trim()) {
+        ElMessage.error('请先填写 Webhook URL');
+        return;
+    }
+
+    notifySaving.value = true;
+    try {
+        const res = await api.put('/user/notification-settings', {
+            dingtalk_webhook_url: notifyForm.value.dingtalk_webhook_url,
+            notify_dingtalk_enabled: notifyForm.value.notify_dingtalk_enabled,
+            notify_email_enabled: notifyForm.value.notify_email_enabled,
+        });
+
+        notifyForm.value.notify_email_enabled = res.data.notify_email_enabled ? 1 : 0;
+        notifyForm.value.notify_dingtalk_enabled = res.data.notify_dingtalk_enabled ? 1 : 0;
+        notifyForm.value.dingtalk_webhook_url = res.data.dingtalk_webhook_url || '';
+
+        if (res.data.dingtalk_enable_notified) ElMessage.success('钉钉通知已开启，已发送一条开启通知');
+        else ElMessage.success('已保存通知设置');
+
+        showNotifyDialog.value = false;
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ElMessage.error((e as any).response?.data?.error || '保存失败');
+    } finally {
+        notifySaving.value = false;
+    }
+};
 
 const addForm = ref({
     alias_name: '',
@@ -707,6 +890,88 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     gap: 6px;
+}
+
+.notify-settings-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    color: #fff;
+    font-size: 18px;
+}
+
+.notify-settings-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
+}
+
+.form-hint {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.3;
+    margin: 0;
+}
+
+.form-hint a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.form-hint a:hover {
+    text-decoration: underline;
+}
+
+.notify-field {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.notify-switch-row {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+}
+
+.notify-form :deep(.el-form-item__label) {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.notify-section-divider {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 14px 0 6px;
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+    user-select: none;
+}
+
+.notify-section-divider::before,
+.notify-section-divider::after {
+    content: '';
+    height: 1px;
+    background: var(--el-border-color-lighter);
+    flex: 1;
+}
+
+.notify-section-divider > span {
+    padding: 0 2px;
+    white-space: nowrap;
+}
+
+.threshold-field {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.threshold-hint {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.2;
 }
 
 .header-title {

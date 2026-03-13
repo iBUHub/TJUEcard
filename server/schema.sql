@@ -4,6 +4,12 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     max_subscriptions INTEGER,
+    notify_email_enabled INTEGER NOT NULL DEFAULT 1 CHECK(notify_email_enabled IN (0, 1)),
+    dingtalk_webhook_url TEXT,
+    notify_dingtalk_enabled INTEGER NOT NULL DEFAULT 0 CHECK(
+        notify_dingtalk_enabled IN (0, 1)
+        AND (notify_dingtalk_enabled = 0 OR length(trim(coalesce(dingtalk_webhook_url, ''))) > 0)
+    ),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
