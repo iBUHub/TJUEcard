@@ -237,6 +237,15 @@
                                         :inactive-value="0"
                                     />
                                 </div>
+                                <div class="form-hint">
+                                    想在微信收到通知？可通过邮箱转发到 QQ 邮箱并在微信开启“QQ 邮箱提醒”：
+                                    <a
+                                        href="https://github.com/iBUHub/TJUEcard/issues/13"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        >查看教程</a
+                                    >
+                                </div>
                             </div>
                         </el-form-item>
                     </el-form>
