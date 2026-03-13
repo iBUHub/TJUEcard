@@ -54,6 +54,10 @@ Aims to solve the pain point of sudden power outages due to untimely top-ups.
 
    ![][guide-03]
 
+4. **Enable DingTalk Notifications (Optional)**
+   TJUEcard supports DingTalk group robot notifications. You can paste the robot Webhook URL in "Notification Settings" and enable DingTalk notifications. Tutorial:
+   https://github.com/iBUHub/TJUEcard/issues/12
+
 ## 💻 Local Development
 
 If you want to run or contribute to the project locally, please follow these steps:

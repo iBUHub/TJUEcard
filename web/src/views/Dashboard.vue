@@ -250,7 +250,14 @@
                                     clearable
                                 />
                                 <div class="form-hint">
-                                    填写钉钉群“机器人”提供的 webhook 地址，保存并开启后会立即发送一条开启通知。
+                                    填写钉钉群“机器人”提供的 webhook 地址，保存并开启后会立即发送一条开启通知。如何获取
+                                    Webhook：
+                                    <a
+                                        href="https://github.com/iBUHub/TJUEcard/issues/12"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        >查看教程</a
+                                    >
                                 </div>
                             </div>
                         </el-form-item>
@@ -872,6 +879,15 @@ onUnmounted(() => {
     color: var(--el-text-color-secondary);
     line-height: 1.3;
     margin: 0;
+}
+
+.form-hint a {
+    color: #667eea;
+    text-decoration: none;
+}
+
+.form-hint a:hover {
+    text-decoration: underline;
 }
 
 .notify-field {
