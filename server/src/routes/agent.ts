@@ -114,6 +114,27 @@ async function sendEmail(env: Bindings, to: string, subject: string, html: strin
     }
 }
 
+async function sendDingTalkText(webhookUrl: string, content: string): Promise<boolean> {
+    try {
+        const resp = await fetch(webhookUrl, {
+            body: JSON.stringify({
+                msgtype: "text",
+                text: { content },
+            }),
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
+        });
+
+        const data = (await resp.json().catch(() => null)) as { errcode?: number; errmsg?: string } | null;
+        if (!resp.ok) return false;
+        if (data && typeof data.errcode === "number" && data.errcode !== 0) return false;
+        return true;
+    } catch (e) {
+        console.error("[DingTalk] Failed to send:", e);
+        return false;
+    }
+}
+
 /**
  * Update agent activity in the database (register or update last active time and IP)
  */
@@ -335,7 +356,15 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
 
     const subs = await env.DB.prepare(
         `
-        SELECT u.email, s.notification_threshold, s.alias_name, unixepoch(s.last_notified_at) as last_notified_at, s.user_id
+        SELECT
+            u.email,
+            u.notify_email_enabled,
+            u.notify_dingtalk_enabled,
+            u.dingtalk_webhook_url,
+            s.notification_threshold,
+            s.alias_name,
+            unixepoch(s.last_notified_at) as last_notified_at,
+            s.user_id
         FROM subscriptions s
         JOIN users u ON s.user_id = u.id
         WHERE s.room_id = ? AND s.is_active = 1
@@ -344,6 +373,9 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
         .bind(roomId)
         .all<{
             email: string;
+            notify_email_enabled: number | null;
+            notify_dingtalk_enabled: number | null;
+            dingtalk_webhook_url: string | null;
             notification_threshold: number;
             alias_name: string | null;
             last_notified_at: number | null;
@@ -367,16 +399,39 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
             const aliasName = sub.alias_name || "未命名房间";
             const fullName = room?.full_name || null;
 
+            const emailEnabled = (sub.notify_email_enabled ?? 1) ? 1 : 0;
+            const dingEnabled = (sub.notify_dingtalk_enabled ?? 0) ? 1 : 0;
+            const dingUrl = (sub.dingtalk_webhook_url || "").trim();
+
+            const canSendEmail = emailEnabled === 1;
+            const canSendDing = dingEnabled === 1 && !!dingUrl;
+            if (!canSendEmail && !canSendDing) {
+                // User disabled all channels (or webhook missing); don't spam logs or waste requests.
+                continue;
+            }
+
             console.log(
-                `[Email Alert] To: ${sub.email} | Alias: ${aliasName} | Full: ${fullName} | Level: ${electric}`
+                `[Notify] To: ${sub.email} | Email: ${canSendEmail ? 1 : 0} | DingTalk: ${canSendDing ? 1 : 0} | Alias: ${aliasName} | Level: ${electric}`
             );
 
-            const subject = `⚡ TJUEcard 电费预警 (${electric}度) | 房间：${aliasName}`;
-            const html = generateEmailHtml(aliasName, fullName, electric, sub.notification_threshold);
-            const sent = await sendEmail(env, sub.email, subject, html);
+            let sentEmail = false;
+            let sentDing = false;
 
-            if (sent) {
-                // Update last_notified_at only if email was sent successfully
+            if (canSendEmail) {
+                const subject = `⚡ TJUEcard 电费预警 (${electric}度) | 房间：${aliasName}`;
+                const html = generateEmailHtml(aliasName, fullName, electric, sub.notification_threshold);
+                sentEmail = await sendEmail(env, sub.email, subject, html);
+            }
+
+            if (canSendDing) {
+                const thresholdText =
+                    sub.notification_threshold === -1 ? "始终通知" : `${sub.notification_threshold}度`;
+                const roomText = fullName ? `${aliasName}（${fullName}）` : aliasName;
+                const content = `⚡ TJUEcard 电费预警\n房间：${roomText}\n电量：${electric}度\n阈值：${thresholdText}`;
+                sentDing = await sendDingTalkText(dingUrl, content);
+            }
+
+            if (sentEmail || sentDing) {
                 await env.DB.prepare(
                     "UPDATE subscriptions SET last_notified_at = datetime(?, 'unixepoch') WHERE user_id = ? AND room_id = ?"
                 )

@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import auth from "./routes/auth";
 import rooms from "./routes/rooms";
 import agent from "./routes/agent";
+import user from "./routes/user";
 import { getLocalDb, D1Adapter } from "./db";
 
 // Load environment variables
@@ -67,6 +68,7 @@ app.get("/", c => {
 app.route("/auth", auth);
 app.route("/rooms", rooms);
 app.route("/agent", agent);
+app.route("/user", user);
 
 // Start the server
 const port = parseInt(process.env.PORT || "3000", 10);
