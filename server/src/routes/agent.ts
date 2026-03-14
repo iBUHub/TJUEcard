@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { Context } from "hono";
 import { Bindings, Variables } from "../types";
+import { sendWeChatLowElectricityNotification } from "../wechat-client";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -405,17 +406,13 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
 
             const canSendEmail = emailEnabled === 1;
             const canSendDing = dingEnabled === 1 && !!dingUrl;
-            if (!canSendEmail && !canSendDing) {
-                // User disabled all channels (or webhook missing); don't spam logs or waste requests.
-                continue;
-            }
-
-            console.log(
-                `[Notify] To: ${sub.email} | Email: ${canSendEmail ? 1 : 0} | DingTalk: ${canSendDing ? 1 : 0} | Alias: ${aliasName} | Level: ${electric}`
-            );
+            // Note: even if email/dingtalk are disabled, user might enable WeChat test-account notifications.
 
             let sentEmail = false;
             let sentDing = false;
+            let wechatActive = 0;
+            let sentWeChat = false;
+            let wechatError: string | null = null;
 
             if (canSendEmail) {
                 const subject = `⚡ TJUEcard 电费预警 (${electric}度) | 房间：${aliasName}`;
@@ -431,7 +428,32 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
                 sentDing = await sendDingTalkText(dingUrl, content);
             }
 
-            if (sentEmail || sentDing) {
+            // WeChat (optional): uses each user's own WeChat test account.
+            try {
+                const res = await sendWeChatLowElectricityNotification(env, sub.user_id, {
+                    electric,
+                    roomAlias: aliasName,
+                    roomFullName: fullName,
+                    threshold: sub.notification_threshold,
+                });
+                wechatActive = res.skipped ? 0 : 1;
+                sentWeChat = res.ok;
+                if (!res.ok && !res.skipped) {
+                    wechatError = res.error || "unknown";
+                }
+            } catch (e) {
+                wechatActive = 1;
+                wechatError = String(e);
+            }
+
+            console.log(
+                `[Notify] To: ${sub.email} | Email: ${canSendEmail ? 1 : 0} | DingTalk: ${canSendDing ? 1 : 0} | WeChat: ${wechatActive} | WeChatOK: ${sentWeChat ? 1 : 0} | Alias: ${aliasName} | Level: ${electric}`
+            );
+            if (wechatError) {
+                console.log(`[WeChat] send failed for user=${sub.user_id}: ${wechatError}`);
+            }
+
+            if (sentEmail || sentDing || sentWeChat) {
                 await env.DB.prepare(
                     "UPDATE subscriptions SET last_notified_at = datetime(?, 'unixepoch') WHERE user_id = ? AND room_id = ?"
                 )
