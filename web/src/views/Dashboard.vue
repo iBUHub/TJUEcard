@@ -6,7 +6,7 @@
                 <div class="header-right">
                     <el-button class="theme-toggle-btn" circle :icon="themeIcon" @click="toggleTheme" />
                     <el-button class="notify-settings-btn" circle :icon="Setting" @click="openNotifyDialog" />
-                    <el-button class="logout-btn" @click="logout">退出登录</el-button>
+                    <el-button class="logout-btn" circle :icon="LogoutDoorIcon" @click="confirmLogout" />
                 </div>
             </div>
         </el-header>
@@ -25,16 +25,7 @@
                 <el-table-column label="状态">
                     <template #default="scope">
                         <el-tag :type="getStatusType(scope.row)">
-                            <span v-if="isQuerying(scope.row)"> 正在查询 </span>
-                            <span v-else>
-                                {{
-                                    scope.row.last_query_status === 'success'
-                                        ? '查询成功'
-                                        : scope.row.last_query_status === 'failed'
-                                          ? '查询失败'
-                                          : '等待查询'
-                                }}
-                            </span>
+                            {{ getStatusLabel(scope.row) }}
                         </el-tag>
                     </template>
                 </el-table-column>
@@ -221,7 +212,7 @@
             <el-dialog
                 v-model="showNotifyDialog"
                 title="通知设置"
-                width="560px"
+                width="min(560px, 92vw)"
                 class="notify-settings-dialog"
                 align-center
                 @closed="notifyDialogClosed"
@@ -251,54 +242,253 @@
                         </el-form-item>
                     </el-form>
 
-                    <div class="notify-section-divider">
-                        <span>钉钉群机器人</span>
-                    </div>
+                    <el-collapse v-model="notifyCollapseActive" class="notify-collapse">
+                        <el-collapse-item title="钉钉群机器人" name="dingtalk">
+                            <el-form class="notify-form" label-width="140px" label-position="left">
+                                <el-form-item label="Webhook URL">
+                                    <div class="notify-field">
+                                        <el-input
+                                            v-model="notifyForm.dingtalk_webhook_url"
+                                            placeholder="https://oapi.dingtalk.com/robot/send?access_token=..."
+                                            clearable
+                                            :disabled="notifyLoading || notifySaving || !notifyReady"
+                                        />
+                                        <div class="form-hint">
+                                            填写钉钉群“机器人”提供的 webhook
+                                            地址，保存并开启后会立即发送一条开启通知。如何获取 Webhook：
+                                            <a
+                                                href="https://github.com/iBUHub/TJUEcard/issues/12"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                >查看教程</a
+                                            >
+                                        </div>
+                                    </div>
+                                </el-form-item>
 
-                    <el-form class="notify-form" label-width="140px" label-position="left">
-                        <el-form-item label="Webhook URL">
-                            <div class="notify-field">
-                                <el-input
-                                    v-model="notifyForm.dingtalk_webhook_url"
-                                    placeholder="https://oapi.dingtalk.com/robot/send?access_token=..."
-                                    clearable
-                                    :disabled="notifyLoading || notifySaving || !notifyReady"
-                                />
-                                <div class="form-hint">
-                                    填写钉钉群“机器人”提供的 webhook 地址，保存并开启后会立即发送一条开启通知。如何获取
-                                    Webhook：
-                                    <a
-                                        href="https://github.com/iBUHub/TJUEcard/issues/12"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        >查看教程</a
-                                    >
-                                </div>
-                            </div>
-                        </el-form-item>
+                                <el-form-item label="钉钉通知">
+                                    <div class="notify-field">
+                                        <div class="notify-switch-row">
+                                            <el-switch
+                                                v-model="notifyForm.notify_dingtalk_enabled"
+                                                :active-value="1"
+                                                :inactive-value="0"
+                                                :disabled="
+                                                    dingtalkSwitchDisabled ||
+                                                    notifyLoading ||
+                                                    notifySaving ||
+                                                    !notifyReady
+                                                "
+                                            />
+                                        </div>
+                                        <div class="form-hint">
+                                            {{
+                                                dingtalkSwitchDisabled
+                                                    ? '先填写 Webhook URL 才能开启钉钉通知'
+                                                    : '开启后电量预警会发送到钉钉群'
+                                            }}
+                                        </div>
+                                    </div>
+                                </el-form-item>
+                            </el-form>
+                        </el-collapse-item>
 
-                        <el-form-item label="钉钉通知">
-                            <div class="notify-field">
-                                <div class="notify-switch-row">
-                                    <el-switch
-                                        v-model="notifyForm.notify_dingtalk_enabled"
-                                        :active-value="1"
-                                        :inactive-value="0"
-                                        :disabled="
-                                            dingtalkSwitchDisabled || notifyLoading || notifySaving || !notifyReady
-                                        "
-                                    />
-                                </div>
-                                <div class="form-hint">
-                                    {{
-                                        dingtalkSwitchDisabled
-                                            ? '先填写 Webhook URL 才能开启钉钉通知'
-                                            : '开启后电量预警会发送到钉钉群'
-                                    }}
-                                </div>
-                            </div>
-                        </el-form-item>
-                    </el-form>
+                        <el-collapse-item title="微信测试号通知" name="wechat">
+                            <el-form class="notify-form" label-width="140px" label-position="left">
+                                <el-form-item label="微信通知">
+                                    <div class="notify-field">
+                                        <div class="notify-switch-row">
+                                            <el-switch
+                                                v-model="wechatForm.notify_wechat_enabled"
+                                                :active-value="1"
+                                                :inactive-value="0"
+                                                :disabled="notifyLoading || notifySaving"
+                                            />
+                                        </div>
+                                        <div class="form-hint">需用户自己注册测试号并关注后自动绑定 openid。</div>
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="appID">
+                                    <div class="notify-field">
+                                        <el-input
+                                            v-model="wechatForm.app_id"
+                                            placeholder="wx..."
+                                            clearable
+                                            :disabled="notifyLoading || notifySaving"
+                                        />
+                                        <div class="form-hint">用于拼接回调 URL：/wechat/&lt;appId&gt;/callback</div>
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="appsecret">
+                                    <div class="notify-field">
+                                        <el-input
+                                            v-model="wechatForm.app_secret"
+                                            :placeholder="'填入 appsecret'"
+                                            clearable
+                                            :disabled="notifyLoading || notifySaving"
+                                        />
+                                        <div class="form-hint">仅用于服务端换取 access_token，请勿泄露。</div>
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="URL">
+                                    <div class="notify-field">
+                                        <el-input :model-value="wechatCallbackUrl" readonly :disabled="notifyLoading" />
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="Token">
+                                    <div class="notify-field">
+                                        <el-input
+                                            v-model="wechatForm.token"
+                                            placeholder="与测试号后台接口配置信息 Token 保持一致"
+                                            clearable
+                                            :disabled="notifyLoading || notifySaving"
+                                        >
+                                            <template #append>
+                                                <el-button
+                                                    :disabled="notifyLoading || notifySaving"
+                                                    @click="generateWeChatToken"
+                                                    >生成</el-button
+                                                >
+                                            </template>
+                                        </el-input>
+                                        <div class="notify-switch-row notify-switch-row-wrap">
+                                            <el-button
+                                                size="small"
+                                                :disabled="!wechatCallbackUrl || notifyLoading"
+                                                @click="copyText(wechatCallbackUrl)"
+                                                >复制 URL</el-button
+                                            >
+                                            <el-button
+                                                size="small"
+                                                :disabled="!wechatForm.token.trim() || notifyLoading"
+                                                @click="copyText(wechatForm.token.trim())"
+                                                >复制 Token</el-button
+                                            >
+                                        </div>
+                                        <div class="form-hint">测试号管理“接口配置信息”中填写该 URL 和 Token。</div>
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="JS安全域名">
+                                    <div class="notify-field">
+                                        <el-input :model-value="wechatJsDomain" readonly :disabled="notifyLoading" />
+                                        <div class="notify-switch-row" style="gap: 8px">
+                                            <el-button
+                                                size="small"
+                                                :disabled="notifyLoading || notifySaving"
+                                                @click="copyText(wechatJsDomain)"
+                                                >复制</el-button
+                                            >
+                                        </div>
+                                        <div class="form-hint">测试号后台“JS 接口安全域名”填写该域名。</div>
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="模板内容">
+                                    <div class="notify-field">
+                                        <el-input
+                                            :model-value="wechatTemplateContent"
+                                            type="textarea"
+                                            autosize
+                                            readonly
+                                        />
+                                        <div class="notify-switch-row notify-switch-row-wrap">
+                                            <el-button
+                                                size="small"
+                                                :disabled="notifyLoading || notifySaving"
+                                                @click="copyText(wechatTemplateTitle)"
+                                                >复制模板标题</el-button
+                                            >
+                                            <el-button
+                                                size="small"
+                                                :disabled="notifyLoading || notifySaving"
+                                                @click="copyText(wechatTemplateContent)"
+                                                >复制模板内容</el-button
+                                            >
+                                        </div>
+                                        <div class="form-hint">
+                                            用于在测试号后台新增测试模板时填写“模板标题”“模版内容”。
+                                        </div>
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="模板ID">
+                                    <div class="notify-field">
+                                        <el-input
+                                            v-model="wechatForm.template_id"
+                                            placeholder="用于接口调用发送模板消息"
+                                            clearable
+                                            :disabled="notifyLoading || notifySaving"
+                                        />
+                                    </div>
+                                </el-form-item>
+
+                                <el-form-item label="已订阅用户">
+                                    <div class="notify-field">
+                                        <div class="notify-switch-row notify-switch-row-wrap">
+                                            <el-button
+                                                size="small"
+                                                type="primary"
+                                                plain
+                                                :loading="wechatTestSending"
+                                                :disabled="
+                                                    notifyLoading || notifySaving || wechatTestSending || !wechatBound
+                                                "
+                                                @click="sendWeChatTestNotification"
+                                                >测试通知</el-button
+                                            >
+                                            <el-button
+                                                size="small"
+                                                type="danger"
+                                                plain
+                                                :disabled="notifyLoading || notifySaving || !wechatBound"
+                                                @click="unbindWeChatTestAccount"
+                                                >解绑测试号</el-button
+                                            >
+                                        </div>
+
+                                        <el-table
+                                            :data="wechatFollowersDisplay"
+                                            :loading="wechatFollowersRefreshing"
+                                            size="small"
+                                            border
+                                            style="width: 100%"
+                                            :empty-text="'暂无关注者（请先关注测试号）'"
+                                        >
+                                            <el-table-column label="OpenID" min-width="280">
+                                                <template #default="{ row }">
+                                                    <span
+                                                        style="
+                                                            font-family:
+                                                                ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+                                                                monospace;
+                                                        "
+                                                    >
+                                                        {{ row.openid }}
+                                                    </span>
+                                                </template>
+                                            </el-table-column>
+                                        </el-table>
+
+                                        <div class="form-hint">
+                                            打开设置页会自动从微信同步；取消关注后该 OpenID 会从列表中移除。
+                                        </div>
+                                        <div
+                                            v-if="wechatFollowersSyncError"
+                                            class="form-hint"
+                                            style="color: var(--el-color-danger)"
+                                        >
+                                            {{ wechatFollowersSyncError }}
+                                        </div>
+                                    </div>
+                                </el-form-item>
+                            </el-form>
+                        </el-collapse-item>
+                    </el-collapse>
                 </div>
 
                 <template #footer>
@@ -348,7 +538,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, computed, watch, defineComponent, h } from 'vue';
 import api from '../api';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -356,6 +546,41 @@ import axios from 'axios';
 import { spacingText } from '../utils/pangu';
 import { useTheme } from '../composables/useTheme';
 import { Moon, Sunny, Monitor, Refresh, Setting } from '@element-plus/icons-vue';
+
+const LogoutDoorIcon = defineComponent({
+    name: 'LogoutDoorIcon',
+    setup() {
+        return () =>
+            h(
+                'svg',
+                {
+                    fill: 'none',
+                    height: '1em',
+                    stroke: 'currentColor',
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round',
+                    strokeWidth: 2,
+                    viewBox: '0 0 24 24',
+                    width: '1em',
+                    xmlns: 'http://www.w3.org/2000/svg',
+                },
+                [
+                    h('path', {
+                        d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4',
+                    }),
+                    h('polyline', {
+                        points: '16 17 21 12 16 7',
+                    }),
+                    h('line', {
+                        x1: 21,
+                        x2: 9,
+                        y1: 12,
+                        y2: 12,
+                    }),
+                ]
+            );
+    },
+});
 
 interface Room {
     id: number;
@@ -385,6 +610,7 @@ const editingRoomId = ref<number | ''>('');
 const submitLoading = ref(false);
 
 const showNotifyDialog = ref(false);
+const notifyCollapseActive = ref<string[]>([]);
 const notifyLoading = ref(false);
 const notifySaving = ref(false);
 const notifyReady = ref(false);
@@ -393,6 +619,39 @@ const notifyForm = ref({
     notify_dingtalk_enabled: 0 as 0 | 1,
     notify_email_enabled: 1 as 0 | 1,
 });
+
+const wechatBound = ref(false);
+const wechatHasAppSecret = ref(false);
+const wechatFollowers = ref<Array<{ openid: string }>>([]);
+const wechatForm = ref({
+    app_id: '',
+    app_secret: '',
+    notify_wechat_enabled: 0 as 0 | 1,
+    template_id: '',
+    token: '',
+    updated_at: '',
+});
+
+const resolveWeChatCallbackBase = () => {
+    // Default: use the current frontend origin as callback base.
+    // This works for both dev and prod as long as `/wechat/*` is routed/proxied to the backend.
+    return window.location.origin.replace(/\/+$/, '');
+};
+
+const wechatCallbackBase = resolveWeChatCallbackBase();
+
+const wechatCallbackUrl = computed(() => {
+    const appId = wechatForm.value.app_id.trim();
+    if (!appId) return '';
+    return `${wechatCallbackBase}/wechat/${appId}/callback`;
+});
+
+const wechatTemplateContent =
+    '{{first.DATA}}\n房间：{{keyword1.DATA}}\n当前电量：{{keyword2.DATA}}\n提醒阈值：{{keyword3.DATA}}\n{{remark.DATA}}';
+
+const wechatTemplateTitle = 'TJUEcard';
+
+const wechatJsDomain = window.location.hostname;
 
 const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
 
@@ -403,19 +662,97 @@ watch(
     }
 );
 
+const resetWeChatForm = () => {
+    wechatForm.value = {
+        app_id: '',
+        app_secret: '',
+        notify_wechat_enabled: 0 as 0 | 1,
+        template_id: '',
+        token: '',
+        updated_at: '',
+    };
+    wechatHasAppSecret.value = false;
+    wechatFollowers.value = [];
+};
+
+const wechatFollowersRefreshing = ref(false);
+const wechatTestSending = ref(false);
+const wechatFollowersSyncError = ref('');
+const wechatFollowersDisplay = computed(() =>
+    wechatFollowers.value.map(f => ({ openid: (f.openid || '').trim() })).filter(f => f.openid)
+);
+
+const refreshWeChatFollowers = async (opts?: { silent?: boolean }) => {
+    if (wechatFollowersRefreshing.value) return;
+    wechatFollowersRefreshing.value = true;
+    wechatFollowersSyncError.value = '';
+    try {
+        const res = await api.post('/user/wechat-test-account/refresh-followers');
+        if (res.data && Array.isArray(res.data.followers)) {
+            wechatFollowers.value = res.data.followers;
+        }
+        if (res.data?.error) {
+            wechatFollowersSyncError.value = String(res.data.error);
+            if (!opts?.silent) ElMessage.warning(wechatFollowersSyncError.value);
+        }
+        if (Array.isArray(res.data?.errors) && res.data.errors.length > 0) {
+            const msg = String(res.data.errors[0]);
+            wechatFollowersSyncError.value = msg;
+            if (!opts?.silent) ElMessage.warning(msg);
+        }
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const resp = (e as any).response;
+        const data = resp?.data;
+        if (data && Array.isArray(data.followers)) {
+            wechatFollowers.value = data.followers;
+        }
+        const msg = data?.error || '同步失败';
+        wechatFollowersSyncError.value = String(msg);
+        if (!opts?.silent) ElMessage.error(wechatFollowersSyncError.value);
+    } finally {
+        wechatFollowersRefreshing.value = false;
+    }
+};
+
 const loadNotifySettings = async () => {
     notifyLoading.value = true;
     notifyReady.value = false;
     try {
-        const res = await api.get('/user/notification-settings');
-        notifyForm.value.notify_email_enabled = res.data.notify_email_enabled ? 1 : 0;
-        notifyForm.value.notify_dingtalk_enabled = res.data.notify_dingtalk_enabled ? 1 : 0;
-        notifyForm.value.dingtalk_webhook_url = res.data.dingtalk_webhook_url || '';
-        notifyReady.value = true;
-    } catch (e) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ElMessage.error((e as any).response?.data?.error || '加载通知设置失败');
-        notifyReady.value = false;
+        try {
+            const res = await api.get('/user/notification-settings');
+            notifyForm.value.notify_email_enabled = res.data.notify_email_enabled ? 1 : 0;
+            notifyForm.value.notify_dingtalk_enabled = res.data.notify_dingtalk_enabled ? 1 : 0;
+            notifyForm.value.dingtalk_webhook_url = res.data.dingtalk_webhook_url || '';
+            notifyReady.value = true;
+        } catch (e) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ElMessage.error((e as any).response?.data?.error || '加载通知设置失败');
+            notifyReady.value = false;
+        }
+
+        try {
+            const res = await api.get('/user/wechat-test-account');
+            if (res.data && res.data.bound) {
+                wechatBound.value = true;
+                wechatHasAppSecret.value = !!res.data.has_app_secret;
+                wechatForm.value.app_id = res.data.app_id || '';
+                wechatForm.value.token = res.data.token || '';
+                wechatForm.value.template_id = res.data.template_id || '';
+                wechatForm.value.notify_wechat_enabled = res.data.notify_wechat_enabled ? 1 : 0;
+                wechatForm.value.app_secret = res.data.app_secret || '';
+                wechatForm.value.updated_at = res.data.updated_at || '';
+                wechatFollowers.value = Array.isArray(res.data.followers) ? res.data.followers : [];
+            } else {
+                wechatBound.value = false;
+                wechatFollowersSyncError.value = '';
+                resetWeChatForm();
+            }
+        } catch {
+            wechatBound.value = false;
+            wechatFollowersSyncError.value = '';
+            resetWeChatForm();
+        }
     } finally {
         notifyLoading.value = false;
     }
@@ -423,27 +760,138 @@ const loadNotifySettings = async () => {
 
 const openNotifyDialog = async () => {
     showNotifyDialog.value = true;
+    notifyCollapseActive.value = [];
     notifyReady.value = false;
     await loadNotifySettings();
+    // Auto sync followers from WeChat on open (silent, non-blocking).
+    if (wechatBound.value) void refreshWeChatFollowers({ silent: true });
 };
 
 const notifyDialogClosed = () => {
     notifySaving.value = false;
     notifyLoading.value = false;
     notifyReady.value = false;
+    notifyCollapseActive.value = [];
+    wechatBound.value = false;
+    wechatHasAppSecret.value = false;
+    wechatFollowersSyncError.value = '';
+    resetWeChatForm();
 };
 
-const saveNotifySettings = async () => {
-    if (notifyLoading.value || notifySaving.value || !notifyReady.value) return;
-    if (notifyForm.value.notify_dingtalk_enabled === 1 && !notifyForm.value.dingtalk_webhook_url.trim()) {
-        ElMessage.error('请先填写 Webhook URL');
+const generateWeChatToken = () => {
+    try {
+        const bytes = new Uint8Array(16);
+        crypto.getRandomValues(bytes);
+        wechatForm.value.token = Array.from(bytes)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+    } catch {
+        wechatForm.value.token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+    }
+};
+
+const copyText = async (text: string) => {
+    if (!text) return;
+    try {
+        await navigator.clipboard.writeText(text);
+        ElMessage.success('已复制');
+    } catch {
+        ElMessage.error('复制失败，请手动复制');
+    }
+};
+
+const unbindWeChatTestAccount = async () => {
+    try {
+        await ElMessageBox.confirm(
+            '确认解绑该测试号？解绑将删除已保存的 appID/appsecret/Token/模板ID/接收者绑定，并清空关注者列表。解绑后如需继续使用需重新配置并重新关注以绑定 openid。',
+            '解绑测试号',
+            {
+                confirmButtonText: '解绑',
+                type: 'warning',
+            }
+        );
+    } catch {
         return;
     }
 
     notifySaving.value = true;
     try {
+        await api.delete('/user/wechat-test-account');
+        wechatBound.value = false;
+        wechatFollowersSyncError.value = '';
+        resetWeChatForm();
+        ElMessage.success('已解绑');
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ElMessage.error((e as any).response?.data?.error || '解绑失败');
+    } finally {
+        notifySaving.value = false;
+    }
+};
+
+const sendWeChatTestNotification = async () => {
+    if (notifyLoading.value || notifySaving.value || wechatTestSending.value) return;
+    if (!wechatBound.value) {
+        ElMessage.warning('请先保存并绑定微信测试号配置，再发送测试通知');
+        return;
+    }
+
+    wechatTestSending.value = true;
+    try {
+        const res = await api.post('/user/wechat-test-account/test-notify');
+        const sent = Number(res.data?.sent ?? 0);
+        const failed = Number(res.data?.failed ?? 0);
+        const warning = (res.data?.warning || '').trim();
+        ElMessage.success(`测试通知已发送：成功 ${sent}，失败 ${failed}`);
+        if (warning) ElMessage.warning(warning);
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const msg = (e as any).response?.data?.error || '测试通知发送失败';
+        ElMessage.error(String(msg));
+    } finally {
+        wechatTestSending.value = false;
+    }
+};
+
+const saveNotifySettings = async () => {
+    if (notifyLoading.value || notifySaving.value || !notifyReady.value) return;
+    const dingtalkUrl = notifyForm.value.dingtalk_webhook_url.trim();
+    if (notifyForm.value.notify_dingtalk_enabled === 1 && !dingtalkUrl) {
+        ElMessage.error('请先填写钉钉 Webhook URL');
+        return;
+    }
+
+    const shouldSaveWeChat =
+        wechatForm.value.notify_wechat_enabled === 1 ||
+        !!wechatForm.value.app_id.trim() ||
+        !!wechatForm.value.token.trim() ||
+        !!wechatForm.value.template_id.trim() ||
+        !!wechatForm.value.app_secret.trim();
+
+    // Validate WeChat required fields BEFORE saving any settings, to avoid partial updates.
+    if (shouldSaveWeChat) {
+        if (!wechatForm.value.app_id.trim()) {
+            ElMessage.error('请填写微信测试号 appID');
+            return;
+        }
+        if (!wechatForm.value.token.trim()) {
+            ElMessage.error('请填写 Token（需与测试号后台一致）');
+            return;
+        }
+        if (!wechatForm.value.app_secret.trim()) {
+            ElMessage.error('请填写 appsecret（不可留空）');
+            return;
+        }
+        if (!wechatForm.value.template_id.trim()) {
+            ElMessage.error('请填写模板ID');
+            return;
+        }
+    }
+
+    notifySaving.value = true;
+    try {
         const res = await api.put('/user/notification-settings', {
-            dingtalk_webhook_url: notifyForm.value.dingtalk_webhook_url,
+            dingtalk_webhook_url: dingtalkUrl,
             notify_dingtalk_enabled: notifyForm.value.notify_dingtalk_enabled,
             notify_email_enabled: notifyForm.value.notify_email_enabled,
         });
@@ -453,7 +901,48 @@ const saveNotifySettings = async () => {
         notifyForm.value.dingtalk_webhook_url = res.data.dingtalk_webhook_url || '';
 
         if (res.data.dingtalk_enable_notified) ElMessage.success('钉钉通知已开启，已发送一条开启通知');
-        else ElMessage.success('已保存通知设置');
+
+        const shouldClearWeChat =
+            wechatBound.value &&
+            wechatForm.value.notify_wechat_enabled === 0 &&
+            !wechatForm.value.app_id.trim() &&
+            !wechatForm.value.app_secret.trim() &&
+            !wechatForm.value.token.trim() &&
+            !wechatForm.value.template_id.trim();
+
+        if (shouldClearWeChat) {
+            try {
+                await api.delete('/user/wechat-test-account');
+                wechatBound.value = false;
+                wechatFollowersSyncError.value = '';
+                resetWeChatForm();
+            } catch (e) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ElMessage.error((e as any).response?.data?.error || '微信配置清空失败');
+                return;
+            }
+        } else if (shouldSaveWeChat) {
+            try {
+                await api.put('/user/wechat-test-account', {
+                    app_id: wechatForm.value.app_id.trim(),
+                    // Send empty string if user clears it; backend will reject and prompt to fix.
+                    app_secret: wechatForm.value.app_secret.trim(),
+                    notify_wechat_enabled: wechatForm.value.notify_wechat_enabled,
+                    template_id: wechatForm.value.template_id.trim(),
+                    token: wechatForm.value.token.trim(),
+                });
+
+                // Keep local state consistent without extra GET calls.
+                wechatBound.value = true;
+                if (wechatForm.value.app_secret.trim()) wechatHasAppSecret.value = true;
+            } catch (e) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ElMessage.error((e as any).response?.data?.error || '微信配置保存失败');
+                return;
+            }
+        }
+
+        if (!res.data.dingtalk_enable_notified) ElMessage.success('已保存通知设置');
 
         showNotifyDialog.value = false;
     } catch (e) {
@@ -491,6 +980,17 @@ const isQuerying = (row: Room) => {
     if (!row.next_query_time) return false;
     const nextTime = parseUtcDate(row.next_query_time);
     return nextTime ? now.value >= nextTime : false;
+};
+
+const getStatusLabel = (row: Room) => {
+    const isQueryingNow = isQuerying(row);
+    if (isQueryingNow && (row.is_active ?? 1) === 1) return '正在查询';
+    else if (isQueryingNow) return '停止订阅';
+    return row.last_query_status === 'success'
+        ? '查询成功'
+        : row.last_query_status === 'failed'
+          ? '查询失败'
+          : '等待查询';
 };
 
 const getStatusType = (row: Room) => {
@@ -613,7 +1113,7 @@ const onRoomChange = () => {
     // Set default alias
     const room = roomOptions.value.find(i => i.id === selectedRoomId.value);
     if (room) {
-        addForm.value.alias_name = room.name;
+        addForm.value.alias_name = room.name.trim();
     }
 };
 
@@ -645,12 +1145,14 @@ const fetchRooms = async () => {
 const submitAddRoom = async () => {
     submitLoading.value = true;
     try {
+        addForm.value.alias_name = addForm.value.alias_name?.trim();
+
         // Construct Full Name from selected options
-        const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name;
-        const dist = districtOptions.value.find(i => i.id === selectedDistrictId.value)?.name;
-        const build = buildingOptions.value.find(i => i.id === selectedBuildingId.value)?.name;
-        const floor = floorOptions.value.find(i => i.id === selectedFloorId.value)?.name;
-        const room = roomOptions.value.find(i => i.id === selectedRoomId.value)?.name;
+        const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name?.trim();
+        const dist = districtOptions.value.find(i => i.id === selectedDistrictId.value)?.name?.trim();
+        const build = buildingOptions.value.find(i => i.id === selectedBuildingId.value)?.name?.trim();
+        const floor = floorOptions.value.find(i => i.id === selectedFloorId.value)?.name?.trim();
+        const room = roomOptions.value.find(i => i.id === selectedRoomId.value)?.name?.trim();
 
         // Filter out undefined and empty strings
         // Exclude 'area' from the full name as requested
@@ -768,6 +1270,18 @@ const deleteRoom = (id: number) => {
 const logout = () => {
     localStorage.removeItem('token');
     router.push('/login');
+};
+
+const confirmLogout = () => {
+    ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+        autofocus: false,
+        cancelButtonText: '取消',
+        closeOnClickModal: false,
+        confirmButtonText: '退出登录',
+        type: 'warning',
+    })
+        .then(() => logout())
+        .catch(() => undefined);
 };
 
 const themeIcon = computed(() => {
@@ -909,6 +1423,8 @@ onUnmounted(() => {
     color: var(--el-text-color-secondary);
     line-height: 1.3;
     margin: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .form-hint a {
@@ -931,11 +1447,87 @@ onUnmounted(() => {
     display: flex;
     align-items: center;
     min-height: 32px;
+    gap: 8px;
+}
+
+.notify-switch-row-wrap {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    justify-content: flex-start;
+}
+
+.notify-switch-row :deep(.el-button + .el-button) {
+    margin-left: 0;
+}
+
+.notify-collapse :deep(.el-collapse-item__header),
+.notify-collapse :deep(.el-collapse-item__title),
+.notify-collapse :deep(.el-collapse-item__content) {
+    white-space: normal;
+}
+
+.notify-collapse {
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    position: relative;
+}
+
+.notify-collapse::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    background: var(--el-border-color-lighter);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.notify-collapse :deep(.el-collapse-item) {
+    position: relative;
+}
+
+.notify-collapse :deep(.el-collapse-item::after) {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--el-border-color-lighter);
+    pointer-events: none;
+}
+
+.notify-collapse :deep(.el-collapse-item__header) {
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 0;
+    border-bottom: none;
+}
+
+.notify-collapse :deep(.el-collapse-item__wrap) {
+    border-bottom: none;
+}
+
+.notify-collapse :deep(.el-collapse-item__content) {
+    box-shadow: none;
+    padding-bottom: 0px;
+}
+
+.notify-collapse :deep(.el-collapse-item__content) {
+    word-break: break-word;
 }
 
 .notify-form :deep(.el-form-item__label) {
     justify-content: flex-start;
     text-align: left;
+}
+
+.notify-form :deep(.el-form-item__content) {
+    min-width: 0;
 }
 
 .notify-section-divider {
@@ -982,15 +1574,19 @@ onUnmounted(() => {
 }
 
 .logout-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.6);
     color: #fff;
-    transition: all 0.3s ease;
+    font-size: 18px;
+}
+
+.logout-btn :deep(.el-icon) {
+    font-size: 20px;
 }
 
 .logout-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
 }
 
 .theme-toggle-btn {
@@ -1056,6 +1652,12 @@ onUnmounted(() => {
 
 :deep(.rooms-table .el-table__row),
 :deep(.rooms-table .el-table__cell) {
+    transition: none !important;
+}
+
+/* Remove subscription switch color transition on the home table */
+:deep(.rooms-table .el-switch__core),
+:deep(.rooms-table .el-switch__action) {
     transition: none !important;
 }
 
