@@ -25,16 +25,7 @@
                 <el-table-column label="状态">
                     <template #default="scope">
                         <el-tag :type="getStatusType(scope.row)">
-                            <span v-if="isQuerying(scope.row)"> 正在查询 </span>
-                            <span v-else>
-                                {{
-                                    scope.row.last_query_status === 'success'
-                                        ? '查询成功'
-                                        : scope.row.last_query_status === 'failed'
-                                          ? '查询失败'
-                                          : '等待查询'
-                                }}
-                            </span>
+                            {{ getStatusLabel(scope.row) }}
                         </el-tag>
                     </template>
                 </el-table-column>
@@ -948,6 +939,17 @@ const isQuerying = (row: Room) => {
     if (!row.next_query_time) return false;
     const nextTime = parseUtcDate(row.next_query_time);
     return nextTime ? now.value >= nextTime : false;
+};
+
+const getStatusLabel = (row: Room) => {
+    const isQueryingNow = isQuerying(row);
+    if (isQueryingNow && (row.is_active ?? 1) === 1) return '正在查询';
+    else if (isQueryingNow) return '停止订阅';
+    return row.last_query_status === 'success'
+        ? '查询成功'
+        : row.last_query_status === 'failed'
+          ? '查询失败'
+          : '等待查询';
 };
 
 const getStatusType = (row: Room) => {
