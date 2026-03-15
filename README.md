@@ -62,6 +62,10 @@
    你可以将 `@tju.edu.cn` 邮箱自动转发到 QQ 邮箱，并在微信开启“QQ 邮箱提醒”，从而在微信接收通知。详细教程见：
    https://github.com/iBUHub/TJUEcard/issues/13
 
+6. **配置微信测试号通知（可选）**
+   你也可以在「通知设置」→「微信测试号通知」中填写自己的测试号配置并开启通知。详细教程见：
+   https://github.com/iBUHub/TJUEcard/issues/16
+
 ## 💻 本地开发
 
 如果您希望在本地环境中运行或贡献代码，请参考以下步骤：

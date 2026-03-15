@@ -62,6 +62,10 @@ Aims to solve the pain point of sudden power outages due to untimely top-ups.
    You can auto-forward emails from your `@tju.edu.cn` mailbox to a QQ mailbox, then enable "QQ Mail Alerts" in WeChat to receive notifications. Tutorial:
    https://github.com/iBUHub/TJUEcard/issues/13
 
+6. **Enable WeChat Test-Account Notifications (Optional)**
+   You can also configure and enable notifications in "Notification Settings" → "WeChat Test Account Notifications". Tutorial:
+   https://github.com/iBUHub/TJUEcard/issues/16
+
 ## 💻 Local Development
 
 If you want to run or contribute to the project locally, please follow these steps:

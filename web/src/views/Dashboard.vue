@@ -305,7 +305,15 @@
                                                 :disabled="notifyLoading || notifySaving"
                                             />
                                         </div>
-                                        <div class="form-hint">需用户自己注册测试号并关注后自动绑定 openid。</div>
+                                        <div class="form-hint">
+                                            需用户自己注册测试号并关注后自动绑定 openid。如何配置：
+                                            <a
+                                                href="https://github.com/iBUHub/TJUEcard/issues/16"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                >查看教程</a
+                                            >
+                                        </div>
                                     </div>
                                 </el-form-item>
 
