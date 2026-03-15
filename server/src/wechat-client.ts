@@ -151,7 +151,7 @@ export async function sendWeChatLowElectricityNotification(
     env: Bindings,
     userId: number,
     params: WeChatSendLowElectricityParams
-): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
+): Promise<{ ok: boolean; skipped?: boolean; error?: string; warning?: string }> {
     const account = await getWeChatAccountByUserId(env, userId);
     if (!account) return { ok: false, skipped: true };
 
@@ -205,7 +205,7 @@ export async function sendWeChatLowElectricityNotification(
     }
 
     if (successCount === 0) return { error: errors[0] || "unknown", ok: false };
-    if (errors.length > 0) return { error: errors[0], ok: true };
-    if (sync.warning) return { error: sync.warning, ok: true };
+    if (errors.length > 0) return { ok: true, warning: errors[0] };
+    if (sync.warning) return { ok: true, warning: sync.warning };
     return { ok: true };
 }

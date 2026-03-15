@@ -441,6 +441,9 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
                 if (!res.ok && !res.skipped) {
                     wechatError = res.error || "unknown";
                 }
+                if (res.ok && res.warning) {
+                    wechatError = res.warning;
+                }
             } catch (e) {
                 wechatActive = 1;
                 wechatError = String(e);
@@ -450,7 +453,9 @@ async function checkAndNotify(env: Bindings, roomId: number, electric: number) {
                 `[Notify] To: ${sub.email} | Email: ${canSendEmail ? 1 : 0} | DingTalk: ${canSendDing ? 1 : 0} | WeChat: ${wechatActive} | WeChatOK: ${sentWeChat ? 1 : 0} | Alias: ${aliasName} | Level: ${electric}`
             );
             if (wechatError) {
-                console.log(`[WeChat] send failed for user=${sub.user_id}: ${wechatError}`);
+                console.log(
+                    `[WeChat] send ${sentWeChat ? "warning" : "failed"} for user=${sub.user_id}: ${wechatError}`
+                );
             }
 
             if (sentEmail || sentDing || sentWeChat) {
