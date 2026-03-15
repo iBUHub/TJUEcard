@@ -795,15 +795,44 @@ const unbindWeChatTestAccount = async () => {
 
 const saveNotifySettings = async () => {
     if (notifyLoading.value || notifySaving.value || !notifyReady.value) return;
-    if (notifyForm.value.notify_dingtalk_enabled === 1 && !notifyForm.value.dingtalk_webhook_url.trim()) {
-        ElMessage.error('请先填写 Webhook URL');
+    const dingtalkUrl = notifyForm.value.dingtalk_webhook_url.trim();
+    if (notifyForm.value.notify_dingtalk_enabled === 1 && !dingtalkUrl) {
+        ElMessage.error('请先填写钉钉 Webhook URL');
         return;
+    }
+
+    const shouldSaveWeChat =
+        wechatBound.value ||
+        wechatForm.value.notify_wechat_enabled === 1 ||
+        !!wechatForm.value.app_id.trim() ||
+        !!wechatForm.value.token.trim() ||
+        !!wechatForm.value.template_id.trim() ||
+        !!wechatForm.value.app_secret.trim();
+
+    // Validate WeChat required fields BEFORE saving any settings, to avoid partial updates.
+    if (shouldSaveWeChat) {
+        if (!wechatForm.value.app_id.trim()) {
+            ElMessage.error('请填写微信测试号 appID');
+            return;
+        }
+        if (!wechatForm.value.token.trim()) {
+            ElMessage.error('请填写 Token（需与测试号后台一致）');
+            return;
+        }
+        if (!wechatForm.value.app_secret.trim()) {
+            ElMessage.error('请填写 appsecret（不可留空）');
+            return;
+        }
+        if (!wechatForm.value.template_id.trim()) {
+            ElMessage.error('请填写模板ID');
+            return;
+        }
     }
 
     notifySaving.value = true;
     try {
         const res = await api.put('/user/notification-settings', {
-            dingtalk_webhook_url: notifyForm.value.dingtalk_webhook_url,
+            dingtalk_webhook_url: dingtalkUrl,
             notify_dingtalk_enabled: notifyForm.value.notify_dingtalk_enabled,
             notify_email_enabled: notifyForm.value.notify_email_enabled,
         });
@@ -814,39 +843,15 @@ const saveNotifySettings = async () => {
 
         if (res.data.dingtalk_enable_notified) ElMessage.success('钉钉通知已开启，已发送一条开启通知');
 
-        const shouldSaveWeChat =
-            wechatBound.value ||
-            wechatForm.value.notify_wechat_enabled === 1 ||
-            !!wechatForm.value.app_id.trim() ||
-            !!wechatForm.value.token.trim() ||
-            !!wechatForm.value.template_id.trim() ||
-            !!wechatForm.value.app_secret.trim();
-
         if (shouldSaveWeChat) {
-            if (!wechatForm.value.app_id.trim()) {
-                ElMessage.error('请填写微信测试号 appID');
-                return;
-            }
-            if (!wechatForm.value.token.trim()) {
-                ElMessage.error('请填写 Token（需与测试号后台一致）');
-                return;
-            }
-            if (!wechatHasAppSecret.value && !wechatForm.value.app_secret.trim()) {
-                ElMessage.error('首次配置需要填写 appsecret');
-                return;
-            }
-            if (wechatForm.value.notify_wechat_enabled === 1 && !wechatForm.value.template_id.trim()) {
-                ElMessage.error('开启微信通知需要填写模板ID');
-                return;
-            }
-
             try {
                 await api.put('/user/wechat-test-account', {
-                    app_id: wechatForm.value.app_id.trim() || undefined,
-                    app_secret: wechatForm.value.app_secret.trim() || undefined,
+                    app_id: wechatForm.value.app_id.trim(),
+                    // Send empty string if user clears it; backend will reject and prompt to fix.
+                    app_secret: wechatForm.value.app_secret.trim(),
                     notify_wechat_enabled: wechatForm.value.notify_wechat_enabled,
-                    template_id: wechatForm.value.template_id.trim() || undefined,
-                    token: wechatForm.value.token.trim() || undefined,
+                    template_id: wechatForm.value.template_id.trim(),
+                    token: wechatForm.value.token.trim(),
                 });
 
                 // Keep local state consistent without extra GET calls.

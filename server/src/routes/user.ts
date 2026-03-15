@@ -158,18 +158,18 @@ app.put("/wechat-test-account", async c => {
         }
     }
 
-    const appId = incomingAppId ?? current?.app_id ?? null;
-    const appSecret = incomingAppSecret ?? current?.app_secret ?? null;
-    const token = incomingToken ?? current?.token ?? null;
-    const templateId = incomingTemplateId ?? current?.template_id ?? null;
+    // Important: treat explicit empty string as invalid (normalize -> null).
+    // `??` would otherwise fall back to current value and silently ignore a cleared field.
+    const appId = incomingAppId === undefined ? (current?.app_id ?? null) : incomingAppId;
+    const appSecret = incomingAppSecret === undefined ? (current?.app_secret ?? null) : incomingAppSecret;
+    const token = incomingToken === undefined ? (current?.token ?? null) : incomingToken;
+    const templateId = incomingTemplateId === undefined ? (current?.template_id ?? null) : incomingTemplateId;
     const wechatEnabled: 0 | 1 = (incomingWeChatEnabled ?? ((current?.notify_wechat_enabled ?? 0) ? 1 : 0)) as 0 | 1;
 
     if (!appId) return c.json({ error: "app_id is required" }, 400);
     if (!appSecret) return c.json({ error: "app_secret is required" }, 400);
     if (!token) return c.json({ error: "token is required" }, 400);
-    if (wechatEnabled === 1 && !templateId) {
-        return c.json({ error: "template_id is required when enabling WeChat notifications" }, 400);
-    }
+    if (!templateId) return c.json({ error: "template_id is required" }, 400);
 
     // Explicit check for app_id duplication (do not rely on SQLite constraint only).
     const boundByOther = await c.env.DB.prepare(
