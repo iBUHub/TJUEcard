@@ -6,7 +6,7 @@
                 <div class="header-right">
                     <el-button class="theme-toggle-btn" circle :icon="themeIcon" @click="toggleTheme" />
                     <el-button class="notify-settings-btn" circle :icon="Setting" @click="openNotifyDialog" />
-                    <el-button class="logout-btn" @click="logout">退出登录</el-button>
+                    <el-button class="logout-btn" circle :icon="LogoutDoorIcon" @click="confirmLogout" />
                 </div>
             </div>
         </el-header>
@@ -533,7 +533,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, computed, watch, defineComponent, h } from 'vue';
 import api from '../api';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
@@ -541,6 +541,41 @@ import axios from 'axios';
 import { spacingText } from '../utils/pangu';
 import { useTheme } from '../composables/useTheme';
 import { Moon, Sunny, Monitor, Refresh, Setting } from '@element-plus/icons-vue';
+
+const LogoutDoorIcon = defineComponent({
+    name: 'LogoutDoorIcon',
+    setup() {
+        return () =>
+            h(
+                'svg',
+                {
+                    fill: 'none',
+                    height: '1em',
+                    stroke: 'currentColor',
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round',
+                    strokeWidth: 2,
+                    viewBox: '0 0 24 24',
+                    width: '1em',
+                    xmlns: 'http://www.w3.org/2000/svg',
+                },
+                [
+                    h('path', {
+                        d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4',
+                    }),
+                    h('polyline', {
+                        points: '16 17 21 12 16 7',
+                    }),
+                    h('line', {
+                        x1: 21,
+                        x2: 9,
+                        y1: 12,
+                        y2: 12,
+                    }),
+                ]
+            );
+    },
+});
 
 interface Room {
     id: number;
@@ -1192,6 +1227,18 @@ const logout = () => {
     router.push('/login');
 };
 
+const confirmLogout = () => {
+    ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+        autofocus: false,
+        cancelButtonText: '取消',
+        closeOnClickModal: false,
+        confirmButtonText: '退出登录',
+        type: 'warning',
+    })
+        .then(() => logout())
+        .catch(() => undefined);
+};
+
 const themeIcon = computed(() => {
     switch (theme.value) {
         case 'light':
@@ -1425,15 +1472,19 @@ onUnmounted(() => {
 }
 
 .logout-btn {
-    background: rgba(255, 255, 255, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.6);
     color: #fff;
-    transition: all 0.3s ease;
+    font-size: 18px;
+}
+
+.logout-btn :deep(.el-icon) {
+    font-size: 20px;
 }
 
 .logout-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: #fff;
 }
 
 .theme-toggle-btn {
