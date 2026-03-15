@@ -1,6 +1,6 @@
 import { Bindings } from "./types";
-import { fetchWeChatSubscribedOpenIds } from "./wechat-followers";
 import { getWeChatAccessTokenForAccount, refreshWeChatAccessTokenForAccount } from "./wechat-token";
+import { syncFollowersFromWeChat as syncFollowersFromWeChatShared } from "./wechat-followers-sync";
 
 type WeChatApiError = { errcode: number; errmsg: string };
 
@@ -75,78 +75,6 @@ async function sendTemplateMessage(params: {
     return { ok: true };
 }
 
-async function listOpenIds(env: Bindings, account: WeChatAccountRow, userId: number): Promise<string[]> {
-    const rows = await env.DB.prepare(
-        `
-        SELECT openid
-        FROM wechat_followers
-        WHERE user_id = ? AND app_id = ?
-        ORDER BY id DESC
-    `
-    )
-        .bind(userId, account.app_id)
-        .all<{ openid: string }>();
-
-    const unique: string[] = [];
-    const seen = new Set<string>();
-    for (const r of rows.results ?? []) {
-        const openid = (r.openid || "").trim();
-        if (!openid || seen.has(openid)) continue;
-        seen.add(openid);
-        unique.push(openid);
-    }
-    return unique;
-}
-
-async function syncFollowersFromWeChat(
-    env: Bindings,
-    userId: number,
-    account: WeChatAccountRow,
-    accessToken: string
-): Promise<{ openids: string[]; synced: boolean; warning?: string }> {
-    // 1) Pull from WeChat
-    let res = await fetchWeChatSubscribedOpenIds(accessToken);
-
-    // Token invalid/expired: refresh once and retry
-    if (res.errcode === 40001 || res.errcode === 42001 || res.errcode === 40014) {
-        const fresh = await refreshWeChatAccessTokenForAccount(env, account.app_id, account.app_secret);
-        res = await fetchWeChatSubscribedOpenIds(fresh);
-        accessToken = fresh;
-    }
-
-    // On API errors (esp. daily quota 45009), do NOT mutate DB; fallback to local list.
-    if (res.errcode && res.errcode !== 0) {
-        const local = await listOpenIds(env, account, userId);
-        const warning =
-            res.errcode === 45009
-                ? "微信接口已达当日调用上限（errcode=45009），已使用本地关注者列表发送。"
-                : `微信关注者同步失败：errcode=${res.errcode} ${(res.errmsg || "").trim()}`.trim();
-        return { openids: local, synced: false, warning };
-    }
-
-    const openids = (res.openids ?? []).map(x => x.trim()).filter(Boolean);
-
-    // 2) Sync to DB (small dataset, simplest: replace the set)
-    await env.DB.prepare("DELETE FROM wechat_followers WHERE user_id = ? AND app_id = ?")
-        .bind(userId, account.app_id)
-        .run();
-
-    for (const openid of openids) {
-        await env.DB.prepare(
-            `
-            INSERT INTO wechat_followers (user_id, app_id, openid)
-            VALUES (?, ?, ?)
-            ON CONFLICT(app_id, openid) DO UPDATE SET
-              user_id = excluded.user_id
-        `
-        )
-            .bind(userId, account.app_id, openid)
-            .run();
-    }
-
-    return { openids, synced: true };
-}
-
 export async function sendWeChatLowElectricityNotification(
     env: Bindings,
     userId: number,
@@ -163,7 +91,13 @@ export async function sendWeChatLowElectricityNotification(
 
     // Ensure access_token and follower list are as fresh as possible before sending.
     let accessToken = await getWeChatAccessTokenForAccount(env, account);
-    const sync = await syncFollowersFromWeChat(env, userId, account, accessToken);
+    const sync = await syncFollowersFromWeChatShared({
+        accessToken,
+        appId: account.app_id,
+        appSecret: account.app_secret,
+        env,
+        userId,
+    });
     const openids = sync.openids;
     if (openids.length === 0) return { error: "missing follower openid (please follow the test account)", ok: false };
 

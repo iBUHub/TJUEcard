@@ -1,12 +1,8 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middlewares";
 import { Bindings, Variables } from "../types";
-import { fetchWeChatSubscribedOpenIds } from "../wechat-followers";
-import {
-    getWeChatAccessTokenForUser as getWeChatAccessTokenForUserShared,
-    refreshWeChatAccessTokenForAccount as refreshWeChatAccessTokenForAccountShared,
-    WeChatTokenError,
-} from "../wechat-token";
+import { getWeChatAccessTokenForUser as getWeChatAccessTokenForUserShared, WeChatTokenError } from "../wechat-token";
+import { syncFollowersFromWeChat } from "../wechat-followers-sync";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -253,8 +249,6 @@ app.delete("/wechat-test-account", async c => {
     return c.json({ bound: false });
 });
 
-const refreshWeChatAccessTokenForAccount = refreshWeChatAccessTokenForAccountShared;
-
 function formatWeChatTokenError(errcode: number, errmsg: string): string {
     switch (errcode) {
         case 40013:
@@ -274,24 +268,6 @@ const getWeChatAccessTokenForUser = getWeChatAccessTokenForUserShared;
 app.post("/wechat-test-account/refresh-followers", async c => {
     const user = c.get("user");
 
-    // Ensure the UNIQUE constraint required by our UPSERT exists (for older local SQLite DBs).
-    try {
-        await c.env.DB.prepare(
-            "CREATE UNIQUE INDEX IF NOT EXISTS idx_wechat_followers_app_id_openid ON wechat_followers(app_id, openid)"
-        ).run();
-    } catch (e) {
-        const msg = String(e);
-        if (msg.toLowerCase().includes("unique")) {
-            return c.json(
-                {
-                    error: "数据库中存在重复的 (app_id, openid) 记录，无法创建唯一约束。请先清理重复数据或重建 wechat_followers 表。",
-                },
-                409
-            );
-        }
-        return c.json({ error: "Failed to prepare follower sync: " + msg }, 500);
-    }
-
     let tokenInfo: { appId: string; appSecret: string; accessToken: string } | null = null;
     try {
         tokenInfo = await getWeChatAccessTokenForUser(c.env, user.id);
@@ -305,39 +281,33 @@ app.post("/wechat-test-account/refresh-followers", async c => {
 
     if (!tokenInfo) return c.json({ error: "WeChat test account not configured (missing appsecret)" }, 400);
 
-    let accessToken = tokenInfo.accessToken;
     const errors: string[] = [];
+    c.header("Cache-Control", "no-store");
 
-    // 1) Pull subscribed openid list from WeChat.
-    let listRes = await fetchWeChatSubscribedOpenIds(accessToken);
-    if (listRes.errcode === 40001 || listRes.errcode === 42001 || listRes.errcode === 40014) {
-        try {
-            accessToken = await refreshWeChatAccessTokenForAccount(c.env, tokenInfo.appId, tokenInfo.appSecret);
-            listRes = await fetchWeChatSubscribedOpenIds(accessToken);
-        } catch (e) {
-            const { errcode, errmsg } = getWeChatErrFromUnknown(e);
-            if (Number.isFinite(errcode)) {
-                return c.json({ error: formatWeChatTokenError(errcode as number, String(errmsg || "")) }, 400);
-            }
-            return c.json({ error: "微信 access_token 刷新失败，请检查 appID/appsecret 是否正确。" }, 400);
+    const sync = await syncFollowersFromWeChat({
+        accessToken: tokenInfo.accessToken,
+        appId: tokenInfo.appId,
+        appSecret: tokenInfo.appSecret,
+        env: c.env,
+        userId: user.id,
+    });
+
+    const local = await c.env.DB.prepare(
+        "SELECT openid FROM wechat_followers WHERE user_id = ? AND app_id = ? ORDER BY id DESC"
+    )
+        .bind(user.id, tokenInfo.appId)
+        .all<{ openid: string }>();
+
+    const followers = (local.results ?? []).map(r => ({ openid: (r.openid || "").trim() })).filter(r => r.openid);
+
+    if (!sync.synced) {
+        if (typeof sync.errcode === "number") {
+            errors.push(`user/get errcode=${sync.errcode} errmsg=${sync.errmsg || ""}`.trim());
         }
-    }
+        if (sync.warning) errors.push(sync.warning);
 
-    if (listRes.errcode && listRes.errcode !== 0) {
-        errors.push(`user/get errcode=${listRes.errcode} errmsg=${listRes.errmsg || ""}`.trim());
-
-        const local = await c.env.DB.prepare(
-            "SELECT openid FROM wechat_followers WHERE user_id = ? AND app_id = ? ORDER BY id DESC"
-        )
-            .bind(user.id, tokenInfo.appId)
-            .all<{ openid: string }>();
-
-        const payload = {
-            errors,
-            followers: (local.results ?? []).map(r => ({ openid: (r.openid || "").trim() })).filter(r => r.openid),
-        };
-
-        if (listRes.errcode === 45009) {
+        const payload = { errors, followers };
+        if (sync.errcode === 45009) {
             return c.json(
                 {
                     ...payload,
@@ -356,50 +326,7 @@ app.post("/wechat-test-account/refresh-followers", async c => {
         );
     }
 
-    const openids = (listRes.openids ?? []).slice(0, 2000);
-
-    // 2) Delete followers that are not in WeChat's current subscribed list.
-    // WeChat "user/get" only returns subscribed users; if it's not in the list, we remove it locally.
-    if (openids.length === 0) {
-        await c.env.DB.prepare("DELETE FROM wechat_followers WHERE user_id = ? AND app_id = ?")
-            .bind(user.id, tokenInfo.appId)
-            .run();
-    } else {
-        const placeholders = openids.map(() => "?").join(",");
-        const sql = `
-            DELETE FROM wechat_followers
-            WHERE user_id = ? AND app_id = ? AND openid NOT IN (${placeholders})
-        `;
-        await c.env.DB.prepare(sql)
-            .bind(user.id, tokenInfo.appId, ...openids)
-            .run();
-    }
-
-    // 3) Upsert subscribed openids.
-    for (const openid of openids) {
-        await c.env.DB.prepare(
-            `
-            INSERT INTO wechat_followers (user_id, app_id, openid)
-            VALUES (?, ?, ?)
-            ON CONFLICT(app_id, openid) DO UPDATE SET
-              user_id = excluded.user_id
-        `
-        )
-            .bind(user.id, tokenInfo.appId, openid)
-            .run();
-    }
-
-    const updated = await c.env.DB.prepare(
-        "SELECT openid FROM wechat_followers WHERE user_id = ? AND app_id = ? ORDER BY id DESC"
-    )
-        .bind(user.id, tokenInfo.appId)
-        .all<{ openid: string }>();
-
-    c.header("Cache-Control", "no-store");
-    return c.json({
-        errors,
-        followers: (updated.results ?? []).map(r => ({ openid: (r.openid || "").trim() })).filter(r => r.openid),
-    });
+    return c.json({ errors, followers });
 });
 
 async function sendDingTalkText(webhookUrl: string, content: string): Promise<{ ok: boolean; error?: string }> {

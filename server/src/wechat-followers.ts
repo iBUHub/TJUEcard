@@ -1,6 +1,6 @@
 export async function fetchWeChatSubscribedOpenIds(
     accessToken: string
-): Promise<{ openids: string[]; errcode?: number; errmsg?: string }> {
+): Promise<{ openids: string[]; errcode?: number; errmsg?: string; truncated?: boolean }> {
     const openids: string[] = [];
     let nextOpenid = "";
 
@@ -10,6 +10,7 @@ export async function fetchWeChatSubscribedOpenIds(
     // Safety cap to avoid infinite loops / quota burn on unexpected API behavior.
     // Keep at 20 to match previous behavior (max pages, not follower count).
     const maxPages = 20;
+    let truncated = false;
 
     for (let i = 0; i < maxPages; i++) {
         const url = new URL("https://api.weixin.qq.com/cgi-bin/user/get");
@@ -32,9 +33,13 @@ export async function fetchWeChatSubscribedOpenIds(
         }
 
         const next = typeof json.next_openid === "string" ? json.next_openid.trim() : "";
+        if (i === maxPages - 1 && next && next !== nextOpenid && list.length > 0) {
+            truncated = true;
+            break;
+        }
         if (!next || next === nextOpenid || list.length === 0) break;
         nextOpenid = next;
     }
 
-    return { openids };
+    return truncated ? { openids, truncated: true } : { openids };
 }
