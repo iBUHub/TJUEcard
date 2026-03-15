@@ -1107,11 +1107,11 @@ const submitAddRoom = async () => {
         addForm.value.alias_name = addForm.value.alias_name.trim();
 
         // Construct Full Name from selected options
-        const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name.trim();
-        const dist = districtOptions.value.find(i => i.id === selectedDistrictId.value)?.name.trim();
-        const build = buildingOptions.value.find(i => i.id === selectedBuildingId.value)?.name.trim();
-        const floor = floorOptions.value.find(i => i.id === selectedFloorId.value)?.name.trim();
-        const room = roomOptions.value.find(i => i.id === selectedRoomId.value)?.name.trim();
+        const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name?.trim();
+        const dist = districtOptions.value.find(i => i.id === selectedDistrictId.value)?.name?.trim();
+        const build = buildingOptions.value.find(i => i.id === selectedBuildingId.value)?.name?.trim();
+        const floor = floorOptions.value.find(i => i.id === selectedFloorId.value)?.name?.trim();
+        const room = roomOptions.value.find(i => i.id === selectedRoomId.value)?.name?.trim();
 
         // Filter out undefined and empty strings
         // Exclude 'area' from the full name as requested
