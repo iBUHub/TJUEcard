@@ -355,10 +355,7 @@
                                                 >
                                             </template>
                                         </el-input>
-                                        <div
-                                            class="notify-switch-row"
-                                            style="gap: 8px; flex-wrap: wrap; row-gap: 8px; justify-content: flex-start"
-                                        >
+                                        <div class="notify-switch-row notify-switch-row-wrap">
                                             <el-button
                                                 size="small"
                                                 :disabled="!wechatCallbackUrl || notifyLoading"
@@ -399,7 +396,13 @@
                                             autosize
                                             readonly
                                         />
-                                        <div class="notify-switch-row" style="gap: 8px">
+                                        <div class="notify-switch-row notify-switch-row-wrap">
+                                            <el-button
+                                                size="small"
+                                                :disabled="notifyLoading || notifySaving"
+                                                @click="copyText(wechatTemplateTitle)"
+                                                >复制模板标题</el-button
+                                            >
                                             <el-button
                                                 size="small"
                                                 :disabled="notifyLoading || notifySaving"
@@ -408,7 +411,7 @@
                                             >
                                         </div>
                                         <div class="form-hint">
-                                            用于在测试号后台创建模板时填写“内容”。（模板标题可随便写）
+                                            用于在测试号后台新增测试模板时填写“模板标题”“模版内容”。
                                         </div>
                                     </div>
                                 </el-form-item>
@@ -426,7 +429,7 @@
 
                                 <el-form-item label="已订阅用户">
                                     <div class="notify-field">
-                                        <div class="notify-switch-row" style="gap: 8px">
+                                        <div class="notify-switch-row notify-switch-row-wrap">
                                             <el-button
                                                 size="small"
                                                 type="primary"
@@ -645,6 +648,8 @@ const wechatCallbackUrl = computed(() => {
 
 const wechatTemplateContent =
     '{{first.DATA}}\n房间：{{keyword1.DATA}}\n当前电量：{{keyword2.DATA}}\n提醒阈值：{{keyword3.DATA}}\n{{remark.DATA}}';
+
+const wechatTemplateTitle = 'TJUEcard';
 
 const wechatJsDomain = window.location.hostname;
 
@@ -1445,6 +1450,12 @@ onUnmounted(() => {
     gap: 8px;
 }
 
+.notify-switch-row-wrap {
+    flex-wrap: wrap;
+    row-gap: 8px;
+    justify-content: flex-start;
+}
+
 .notify-switch-row :deep(.el-button + .el-button) {
     margin-left: 0;
 }
@@ -1453,6 +1464,57 @@ onUnmounted(() => {
 .notify-collapse :deep(.el-collapse-item__title),
 .notify-collapse :deep(.el-collapse-item__content) {
     white-space: normal;
+}
+
+.notify-collapse {
+    width: 100%;
+    box-sizing: border-box;
+    border: none;
+    position: relative;
+}
+
+.notify-collapse::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 2px;
+    background: var(--el-border-color-lighter);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.notify-collapse :deep(.el-collapse-item) {
+    position: relative;
+}
+
+.notify-collapse :deep(.el-collapse-item::after) {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 2px;
+    background: var(--el-border-color-lighter);
+    pointer-events: none;
+}
+
+.notify-collapse :deep(.el-collapse-item__header) {
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    z-index: 0;
+    border-bottom: none;
+}
+
+.notify-collapse :deep(.el-collapse-item__wrap) {
+    border-bottom: none;
+}
+
+.notify-collapse :deep(.el-collapse-item__content) {
+    box-shadow: none;
+    padding-bottom: 0px;
 }
 
 .notify-collapse :deep(.el-collapse-item__content) {

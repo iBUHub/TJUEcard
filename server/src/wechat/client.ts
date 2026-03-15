@@ -197,8 +197,8 @@ export async function sendWeChatTestNotification(
     const data = {
         first: { color: "#1677ff", value: "TJUEcard 测试通知：如果你收到了这条消息，说明配置正常。" },
         keyword1: { value: `测试房间（${timeText}）` },
-        keyword2: { value: "1895 kWh" },
-        keyword3: { value: "50 kWh" },
+        keyword2: { value: "66 kWh" },
+        keyword3: { value: "1895 kWh" },
         remark: { color: "#666666", value: "这是一条测试消息，不代表真实电量。你可以现在去解绑/改模板 ID 再测。" },
     };
 
