@@ -158,12 +158,17 @@ app.put("/wechat-test-account", async c => {
         }
     }
 
-    // Important: treat explicit empty string as invalid (normalize -> null).
-    // `??` would otherwise fall back to current value and silently ignore a cleared field.
-    const appId = incomingAppId === undefined ? (current?.app_id ?? null) : incomingAppId;
-    const appSecret = incomingAppSecret === undefined ? (current?.app_secret ?? null) : incomingAppSecret;
-    const token = incomingToken === undefined ? (current?.token ?? null) : incomingToken;
-    const templateId = incomingTemplateId === undefined ? (current?.template_id ?? null) : incomingTemplateId;
+    // Enforce "all-or-nothing" on this endpoint:
+    // if the client calls this save API, it must submit a full config (no partial updates).
+    if (incomingAppId === undefined) return c.json({ error: "app_id is required" }, 400);
+    if (incomingAppSecret === undefined) return c.json({ error: "app_secret is required" }, 400);
+    if (incomingToken === undefined) return c.json({ error: "token is required" }, 400);
+    if (incomingTemplateId === undefined) return c.json({ error: "template_id is required" }, 400);
+
+    const appId = incomingAppId;
+    const appSecret = incomingAppSecret;
+    const token = incomingToken;
+    const templateId = incomingTemplateId;
     const wechatEnabled: 0 | 1 = (incomingWeChatEnabled ?? ((current?.notify_wechat_enabled ?? 0) ? 1 : 0)) as 0 | 1;
 
     if (!appId) return c.json({ error: "app_id is required" }, 400);

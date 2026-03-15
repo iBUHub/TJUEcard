@@ -802,7 +802,6 @@ const saveNotifySettings = async () => {
     }
 
     const shouldSaveWeChat =
-        wechatBound.value ||
         wechatForm.value.notify_wechat_enabled === 1 ||
         !!wechatForm.value.app_id.trim() ||
         !!wechatForm.value.token.trim() ||
@@ -843,7 +842,26 @@ const saveNotifySettings = async () => {
 
         if (res.data.dingtalk_enable_notified) ElMessage.success('钉钉通知已开启，已发送一条开启通知');
 
-        if (shouldSaveWeChat) {
+        const shouldClearWeChat =
+            wechatBound.value &&
+            wechatForm.value.notify_wechat_enabled === 0 &&
+            !wechatForm.value.app_id.trim() &&
+            !wechatForm.value.app_secret.trim() &&
+            !wechatForm.value.token.trim() &&
+            !wechatForm.value.template_id.trim();
+
+        if (shouldClearWeChat) {
+            try {
+                await api.delete('/user/wechat-test-account');
+                wechatBound.value = false;
+                wechatFollowersSyncError.value = '';
+                resetWeChatForm();
+            } catch (e) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ElMessage.error((e as any).response?.data?.error || '微信配置清空失败');
+                return;
+            }
+        } else if (shouldSaveWeChat) {
             try {
                 await api.put('/user/wechat-test-account', {
                     app_id: wechatForm.value.app_id.trim(),
