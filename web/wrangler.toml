@@ -2,6 +2,10 @@ name = "tjuecard-web"
 compatibility_date = "2026-01-17"
 main = "worker.js"
 
+[vars]
+# Backend origin for reverse-proxying /wechat/*.
+# Example: VITE_API_BASE_URL = "https://XXXX.com"
+
 [assets]
 directory = "./dist"
 binding = "ASSETS"
