@@ -105,13 +105,14 @@ export async function sendWeChatLowElectricityNotification(
     const thresholdText = params.threshold === -1 ? "始终通知" : `${params.threshold} 度`;
     const electricText = `${params.electric} 度`;
 
-    // Recommended: pick a template that has fields: first, keyword1, keyword2, keyword3, remark.
+    // IMPORTANT: WeChat template fields do NOT include `keyword0` (numbering starts at 1).
+    // Use keyword4/keyword5 if you want header/footer lines in the template content.
     const data = {
-        first: { color: "#ff4d4f", value: "TJUEcard 电费提醒：余额不足" },
         keyword1: { value: roomText },
         keyword2: { value: electricText },
         keyword3: { value: thresholdText },
-        remark: { color: "#666666", value: "请及时充值，避免突然断电。" },
+        keyword4: { value: "请及时充值，避免断电" },
+        keyword5: { value: "TJUEcard 电费提醒" },
     };
 
     const trySendTo = async (toUser: string, token: string) =>
@@ -195,11 +196,11 @@ export async function sendWeChatTestNotification(
     // Reuse the same field set the UI suggests when creating the template:
     // first, keyword1, keyword2, keyword3, remark.
     const data = {
-        first: { color: "#1677ff", value: "TJUEcard 测试通知：如果你收到了这条消息，说明配置正常。" },
         keyword1: { value: `测试房间（${timeText}）` },
         keyword2: { value: "66 kWh" },
         keyword3: { value: "1895 kWh" },
-        remark: { color: "#666666", value: "这是一条测试消息，不代表真实电量。你可以现在去解绑/改模板 ID 再测。" },
+        keyword4: { value: "这是一条测试消息，不代表真实电量。" },
+        keyword5: { value: "TJUEcard 测试通知" },
     };
 
     const trySend = async (toUser: string, token: string) =>

@@ -655,7 +655,7 @@ const wechatCallbackUrl = computed(() => {
 });
 
 const wechatTemplateContent =
-    '{{first.DATA}}\n房间：{{keyword1.DATA}}\n当前电量：{{keyword2.DATA}}\n提醒阈值：{{keyword3.DATA}}\n{{remark.DATA}}';
+    '标题：{{keyword5.DATA}}\n房间：{{keyword1.DATA}}\n当前电量：{{keyword2.DATA}}\n提醒阈值：{{keyword3.DATA}}\n提示：{{keyword4.DATA}}';
 
 const wechatTemplateTitle = 'TJUEcard';
 
