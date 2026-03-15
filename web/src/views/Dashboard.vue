@@ -1070,7 +1070,7 @@ const onRoomChange = () => {
     // Set default alias
     const room = roomOptions.value.find(i => i.id === selectedRoomId.value);
     if (room) {
-        addForm.value.alias_name = room.name;
+        addForm.value.alias_name = room.name.trim();
     }
 };
 
@@ -1102,12 +1102,14 @@ const fetchRooms = async () => {
 const submitAddRoom = async () => {
     submitLoading.value = true;
     try {
+        addForm.value.alias_name = addForm.value.alias_name.trim();
+
         // Construct Full Name from selected options
-        const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name;
-        const dist = districtOptions.value.find(i => i.id === selectedDistrictId.value)?.name;
-        const build = buildingOptions.value.find(i => i.id === selectedBuildingId.value)?.name;
-        const floor = floorOptions.value.find(i => i.id === selectedFloorId.value)?.name;
-        const room = roomOptions.value.find(i => i.id === selectedRoomId.value)?.name;
+        const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name.trim();
+        const dist = districtOptions.value.find(i => i.id === selectedDistrictId.value)?.name.trim();
+        const build = buildingOptions.value.find(i => i.id === selectedBuildingId.value)?.name.trim();
+        const floor = floorOptions.value.find(i => i.id === selectedFloorId.value)?.name.trim();
+        const room = roomOptions.value.find(i => i.id === selectedRoomId.value)?.name.trim();
 
         // Filter out undefined and empty strings
         // Exclude 'area' from the full name as requested
