@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { authMiddleware } from "../middlewares";
 import { Bindings, Variables } from "../types";
 import { getWeChatAccessTokenForUser as getWeChatAccessTokenForUserShared, WeChatTokenError } from "../wechat/token";
+import { sendWeChatTestNotification } from "../wechat/client";
 import { syncFollowersFromWeChat } from "../wechat/followers-sync";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -336,6 +337,29 @@ app.post("/wechat-test-account/refresh-followers", async c => {
     }
 
     return c.json({ errors, followers });
+});
+
+// Send WeChat test template messages to all local followers for verification
+// (does not require notify_wechat_enabled=1, and does not refresh followers from WeChat).
+app.post("/wechat-test-account/test-notify", async c => {
+    const user = c.get("user");
+
+    try {
+        const res = await sendWeChatTestNotification(c.env, user.id);
+        if (!res.ok) return c.json({ error: res.error || "send failed" }, 400);
+        return c.json({
+            failed: res.failed ?? 0,
+            ok: true,
+            sent: res.sent ?? 0,
+            warning: res.warning || "",
+        });
+    } catch (e) {
+        const { errcode, errmsg } = getWeChatErrFromUnknown(e);
+        if (Number.isFinite(errcode)) {
+            return c.json({ error: formatWeChatTokenError(errcode as number, String(errmsg || "")) }, 400);
+        }
+        return c.json({ error: String(e) }, 500);
+    }
 });
 
 async function sendDingTalkText(webhookUrl: string, content: string): Promise<{ ok: boolean; error?: string }> {

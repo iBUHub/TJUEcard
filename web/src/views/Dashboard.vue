@@ -429,6 +429,17 @@
                                         <div class="notify-switch-row" style="gap: 8px">
                                             <el-button
                                                 size="small"
+                                                type="primary"
+                                                plain
+                                                :loading="wechatTestSending"
+                                                :disabled="
+                                                    notifyLoading || notifySaving || wechatTestSending || !wechatBound
+                                                "
+                                                @click="sendWeChatTestNotification"
+                                                >测试通知</el-button
+                                            >
+                                            <el-button
+                                                size="small"
                                                 type="danger"
                                                 plain
                                                 :disabled="notifyLoading || notifySaving || !wechatBound"
@@ -660,6 +671,7 @@ const resetWeChatForm = () => {
 };
 
 const wechatFollowersRefreshing = ref(false);
+const wechatTestSending = ref(false);
 const wechatFollowersSyncError = ref('');
 const wechatFollowersDisplay = computed(() =>
     wechatFollowers.value.map(f => ({ openid: (f.openid || '').trim() })).filter(f => f.openid)
@@ -809,6 +821,30 @@ const unbindWeChatTestAccount = async () => {
         ElMessage.error((e as any).response?.data?.error || '解绑失败');
     } finally {
         notifySaving.value = false;
+    }
+};
+
+const sendWeChatTestNotification = async () => {
+    if (notifyLoading.value || notifySaving.value || wechatTestSending.value) return;
+    if (!wechatBound.value) {
+        ElMessage.warning('请先保存并绑定微信测试号配置，再发送测试通知');
+        return;
+    }
+
+    wechatTestSending.value = true;
+    try {
+        const res = await api.post('/user/wechat-test-account/test-notify');
+        const sent = Number(res.data?.sent ?? 0);
+        const failed = Number(res.data?.failed ?? 0);
+        const warning = (res.data?.warning || '').trim();
+        ElMessage.success(`测试通知已发送：成功 ${sent}，失败 ${failed}`);
+        if (warning) ElMessage.warning(warning);
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const msg = (e as any).response?.data?.error || '测试通知发送失败';
+        ElMessage.error(String(msg));
+    } finally {
+        wechatTestSending.value = false;
     }
 };
 

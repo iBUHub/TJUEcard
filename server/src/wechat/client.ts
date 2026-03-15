@@ -143,3 +143,96 @@ export async function sendWeChatLowElectricityNotification(
     if (sync.warning) return { ok: true, warning: sync.warning };
     return { ok: true };
 }
+
+export async function sendWeChatTestNotification(
+    env: Bindings,
+    userId: number
+): Promise<{ ok: boolean; error?: string; warning?: string; sent?: number; failed?: number }> {
+    const account = await getWeChatAccountByUserId(env, userId);
+    if (!account) return { error: "WeChat test account not configured", ok: false };
+
+    const templateId = (account.template_id || "").trim();
+    if (!templateId) return { error: "missing template_id", ok: false };
+
+    // Do NOT sync/refresh followers here. The UI already refreshes on opening settings.
+    // We send to all locally stored followers (openid list) to avoid extra WeChat API calls.
+    const rows = await env.DB.prepare(
+        `
+        SELECT openid
+        FROM wechat_followers
+        WHERE user_id = ? AND app_id = ?
+        ORDER BY id DESC
+      `
+    )
+        .bind(userId, account.app_id)
+        .all<{ openid: string }>();
+
+    const openidsUnique: string[] = [];
+    const seen = new Set<string>();
+    for (const r of rows.results ?? []) {
+        const openid = (r.openid || "").trim();
+        if (!openid || seen.has(openid)) continue;
+        seen.add(openid);
+        openidsUnique.push(openid);
+    }
+
+    if (openidsUnique.length === 0) {
+        return { error: "missing follower openid (please follow the test account)", ok: false };
+    }
+
+    let accessToken = await getWeChatAccessTokenForAccount(env, account);
+
+    const now = new Date();
+    const timeText = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(
+        now.getDate()
+    ).padStart(
+        2,
+        "0"
+    )} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(
+        now.getSeconds()
+    ).padStart(2, "0")}`;
+
+    // Reuse the same field set the UI suggests when creating the template:
+    // first, keyword1, keyword2, keyword3, remark.
+    const data = {
+        first: { color: "#1677ff", value: "TJUEcard 测试通知：如果你收到了这条消息，说明配置正常。" },
+        keyword1: { value: `测试房间（${timeText}）` },
+        keyword2: { value: "1895 kWh" },
+        keyword3: { value: "50 kWh" },
+        remark: { color: "#666666", value: "这是一条测试消息，不代表真实电量。你可以现在去解绑/改模板 ID 再测。" },
+    };
+
+    const trySend = async (toUser: string, token: string) =>
+        sendTemplateMessage({
+            accessToken: token,
+            data,
+            templateId,
+            toUser,
+            url: "https://tjuecard.ibuhub.com/",
+        });
+
+    const errors: string[] = [];
+    let successCount = 0;
+
+    for (const toUser of openidsUnique) {
+        let res = await trySend(toUser, accessToken);
+        if (!res.ok) {
+            const code = res.errcode ?? -1;
+            if (code === 40001 || code === 42001 || code === 40014) {
+                accessToken = await refreshWeChatAccessTokenForAccount(env, account.app_id, account.app_secret);
+                res = await trySend(toUser, accessToken);
+            }
+        }
+
+        if (!res.ok) {
+            errors.push(`openid=${toUser} ${res.error || "unknown"}`);
+        } else {
+            successCount++;
+        }
+    }
+
+    const failed = errors.length;
+    if (successCount === 0) return { error: errors[0] || "unknown", failed, ok: false, sent: 0 };
+    if (failed > 0) return { failed, ok: true, sent: successCount, warning: errors[0] };
+    return { failed: 0, ok: true, sent: successCount };
+}
