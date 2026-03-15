@@ -1104,7 +1104,7 @@ const fetchRooms = async () => {
 const submitAddRoom = async () => {
     submitLoading.value = true;
     try {
-        addForm.value.alias_name = addForm.value.alias_name.trim();
+        addForm.value.alias_name = addForm.value.alias_name?.trim();
 
         // Construct Full Name from selected options
         const sys = systemOptions.value.find(i => i.id === selectedSystemId.value)?.name?.trim();
