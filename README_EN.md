@@ -76,7 +76,6 @@ cp .env.example .env
 
 Configuration key notes:
 
-- **Port config**: `PORT=3000` (Backend), `FRONTEND_PORT=5173` (Frontend).
 - **Secret Generation**: `JWT_SECRET` and `AGENT_SECRET` can be randomly generated long strings (e.g., `openssl rand -hex 32`).
 - **Agent Config**: Fill in `TJU_USERNAME` and `TJU_PASSWORD` so that the Agent can simulate login for queries.
 - **Local Debugging**: Setting `SKIP_EMAIL_VERIFICATION=true` allows you to skip real email verification code validation during registration.

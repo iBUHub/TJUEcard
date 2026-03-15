@@ -593,15 +593,9 @@ const wechatForm = ref({
 });
 
 const resolveWeChatCallbackBase = () => {
-    const configured = (import.meta.env.VITE_WECHAT_CALLBACK_BASE_URL || '').trim();
-    if (configured) return configured.replace(/\/+$/, '');
-
-    // Dev mode: when using CF Tunnel / custom domain to access the dev server,
-    // it's more useful to show the current origin as callback base.
-    if (import.meta.env.DEV) return window.location.origin.replace(/\/+$/, '');
-
-    // Production default (backend domain)
-    return 'https://api.tjuecard.ibuhub.com';
+    // Default: use the current frontend origin as callback base.
+    // This works for both dev and prod as long as `/wechat/*` is routed/proxied to the backend.
+    return window.location.origin.replace(/\/+$/, '');
 };
 
 const wechatCallbackBase = resolveWeChatCallbackBase();
@@ -615,8 +609,7 @@ const wechatCallbackUrl = computed(() => {
 const wechatTemplateContent =
     '{{first.DATA}}\n房间：{{keyword1.DATA}}\n当前电量：{{keyword2.DATA}}\n提醒阈值：{{keyword3.DATA}}\n{{remark.DATA}}';
 
-const wechatJsDomainEnvRaw = (import.meta.env.VITE_WECHAT_JS_DOMAIN || '').trim();
-const wechatJsDomain = wechatJsDomainEnvRaw || (import.meta.env.DEV ? window.location.hostname : 'tjuecard.ibuhub.com');
+const wechatJsDomain = window.location.hostname;
 
 const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
 

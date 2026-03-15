@@ -76,7 +76,6 @@ cp .env.example .env
 
 配置项说明：
 
-- **端口配置**：`PORT=3000` (后端), `FRONTEND_PORT=5173` (前端)。
 - **密钥生成**：`JWT_SECRET` 和 `AGENT_SECRET` 可以随机生成长字符串（如：`openssl rand -hex 32`）。
 - **Agent 配置**：填写 `TJU_USERNAME` 和 `TJU_PASSWORD` 以便 Agent 能够模拟登录查询。
 - **本地调试**：设置 `SKIP_EMAIL_VERIFICATION=true` 可以在注册时跳过真实的邮件验证码。

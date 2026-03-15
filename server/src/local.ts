@@ -73,7 +73,7 @@ app.route("/user", user);
 app.route("/wechat", wechat);
 
 // Start the server
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = 3000;
 
 console.log("🚀 TJUEcard Server starting...");
 console.log(`📍 Port: ${port}`);
