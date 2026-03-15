@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { Context } from "hono";
 import { Bindings, Variables } from "../types";
-import { sendWeChatLowElectricityNotification } from "../wechat-client";
+import { sendWeChatLowElectricityNotification } from "../wechat/client";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 

@@ -1,4 +1,4 @@
-import { Bindings } from "./types";
+import { Bindings } from "../types";
 
 export class WeChatTokenError extends Error {
     errcode?: number;

@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import { authMiddleware } from "../middlewares";
 import { Bindings, Variables } from "../types";
-import { getWeChatAccessTokenForUser as getWeChatAccessTokenForUserShared, WeChatTokenError } from "../wechat-token";
-import { syncFollowersFromWeChat } from "../wechat-followers-sync";
+import { getWeChatAccessTokenForUser as getWeChatAccessTokenForUserShared, WeChatTokenError } from "../wechat/token";
+import { syncFollowersFromWeChat } from "../wechat/followers-sync";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -284,13 +284,22 @@ app.post("/wechat-test-account/refresh-followers", async c => {
     const errors: string[] = [];
     c.header("Cache-Control", "no-store");
 
-    const sync = await syncFollowersFromWeChat({
-        accessToken: tokenInfo.accessToken,
-        appId: tokenInfo.appId,
-        appSecret: tokenInfo.appSecret,
-        env: c.env,
-        userId: user.id,
-    });
+    let sync: Awaited<ReturnType<typeof syncFollowersFromWeChat>>;
+    try {
+        sync = await syncFollowersFromWeChat({
+            accessToken: tokenInfo.accessToken,
+            appId: tokenInfo.appId,
+            appSecret: tokenInfo.appSecret,
+            env: c.env,
+            userId: user.id,
+        });
+    } catch (e) {
+        const { errcode, errmsg } = getWeChatErrFromUnknown(e);
+        if (Number.isFinite(errcode)) {
+            return c.json({ error: formatWeChatTokenError(errcode as number, String(errmsg || "")) }, 400);
+        }
+        return c.json({ error: "微信 access_token 刷新失败，请检查 appID/appsecret 是否正确。" }, 400);
+    }
 
     const local = await c.env.DB.prepare(
         "SELECT openid FROM wechat_followers WHERE user_id = ? AND app_id = ? ORDER BY id DESC"

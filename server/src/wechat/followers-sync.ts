@@ -1,6 +1,6 @@
-import { fetchWeChatSubscribedOpenIds } from "./wechat-followers";
-import { refreshWeChatAccessTokenForAccount } from "./wechat-token";
-import type { Bindings } from "./types";
+import { fetchWeChatSubscribedOpenIds } from "./followers";
+import { refreshWeChatAccessTokenForAccount } from "./token";
+import type { Bindings } from "../types";
 
 export type WeChatFollowerSyncResult = {
     openids: string[];

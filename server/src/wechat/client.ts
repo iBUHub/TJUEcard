@@ -1,6 +1,6 @@
-import { Bindings } from "./types";
-import { getWeChatAccessTokenForAccount, refreshWeChatAccessTokenForAccount } from "./wechat-token";
-import { syncFollowersFromWeChat as syncFollowersFromWeChatShared } from "./wechat-followers-sync";
+import { Bindings } from "../types";
+import { syncFollowersFromWeChat as syncFollowersFromWeChatShared } from "./followers-sync";
+import { getWeChatAccessTokenForAccount, refreshWeChatAccessTokenForAccount } from "./token";
 
 type WeChatApiError = { errcode: number; errmsg: string };
 
