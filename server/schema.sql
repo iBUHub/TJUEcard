@@ -102,7 +102,6 @@ CREATE TABLE IF NOT EXISTS wechat_test_accounts (
     user_id INTEGER NOT NULL,
     app_id TEXT NOT NULL,
     app_secret TEXT NOT NULL,
-    token TEXT NOT NULL,
     template_id TEXT,
     notify_wechat_enabled INTEGER NOT NULL DEFAULT 0 CHECK(notify_wechat_enabled IN (0, 1)),
     access_token TEXT,
@@ -119,7 +118,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_wechat_test_accounts_user_id ON wechat_tes
 -- Extra safety for existing local SQLite databases created before UNIQUE(app_id) was added.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_wechat_test_accounts_app_id ON wechat_test_accounts(app_id);
 
--- 8. WeChat Followers (openid binding via subscribe/unsubscribe events)
+-- 8. WeChat Followers (openid cache synced from WeChat APIs)
 CREATE TABLE IF NOT EXISTS wechat_followers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,

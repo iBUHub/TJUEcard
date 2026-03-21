@@ -13,10 +13,6 @@ export default defineConfig({
                 changeOrigin: true,
                 rewrite: path => path.replace(/^\/api/, ''),
             },
-            '/wechat': {
-                target: 'http://localhost:3000',
-                changeOrigin: true,
-            },
         },
     },
     preview: {

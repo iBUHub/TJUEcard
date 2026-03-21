@@ -99,11 +99,6 @@ npm run dev
 > - **Backend**: `npm run dev:server` (Port 3000)
 > - **Frontend**: `npm run dev:web` (Port 5173)
 > - **Agent**: `python start_agent_manual.py`
->
-> [!NOTE]
-> If you want to test with a WeChat test account / official account“Server Configuration”locally (e.g. callback URL `/wechat/<appId>/callback`), WeChat servers must be able to reach your dev environment:
->
-> - Expose the frontend dev server port `5173` to the public internet via a reverse proxy/tunnel (e.g. Cloudflare Tunnel), or forward `5173` directly.
 
 ### 3. Step-by-step Manual Start
 

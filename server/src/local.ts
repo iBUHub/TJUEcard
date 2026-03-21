@@ -5,7 +5,6 @@ import auth from "./routes/auth";
 import rooms from "./routes/rooms";
 import agent from "./routes/agent";
 import user from "./routes/user";
-import wechat from "./routes/wechat";
 import { getLocalDb, D1Adapter } from "./db";
 
 // Load environment variables
@@ -70,7 +69,6 @@ app.route("/auth", auth);
 app.route("/rooms", rooms);
 app.route("/agent", agent);
 app.route("/user", user);
-app.route("/wechat", wechat);
 
 // Start the server
 const port = 3000;

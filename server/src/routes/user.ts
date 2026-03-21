@@ -18,7 +18,6 @@ type NotificationSettings = {
 type WeChatTestAccountConfig = {
     app_id: string;
     app_secret: string;
-    token: string;
     template_id?: string;
     notify_wechat_enabled?: 0 | 1;
 };
@@ -76,7 +75,6 @@ app.get("/wechat-test-account", async c => {
         SELECT
           app_id,
           app_secret,
-          token,
           template_id,
           notify_wechat_enabled,
           (length(trim(coalesce(app_secret, ''))) > 0) as has_app_secret,
@@ -89,7 +87,6 @@ app.get("/wechat-test-account", async c => {
         .first<{
             app_id: string;
             app_secret: string;
-            token: string;
             template_id: string | null;
             notify_wechat_enabled: number | null;
             has_app_secret: number | null;
@@ -120,7 +117,6 @@ app.get("/wechat-test-account", async c => {
         has_app_secret: (row.has_app_secret ?? 0) ? 1 : 0,
         notify_wechat_enabled: (row.notify_wechat_enabled ?? 0) ? 1 : 0,
         template_id: row.template_id ?? "",
-        token: row.token,
         updated_at: row.updated_at,
     });
 });
@@ -130,20 +126,18 @@ app.put("/wechat-test-account", async c => {
     const body = await c.req.json<Partial<WeChatTestAccountConfig>>();
 
     const current = await c.env.DB.prepare(
-        "SELECT app_id, app_secret, token, template_id, notify_wechat_enabled FROM wechat_test_accounts WHERE user_id = ?"
+        "SELECT app_id, app_secret, template_id, notify_wechat_enabled FROM wechat_test_accounts WHERE user_id = ?"
     )
         .bind(user.id)
         .first<{
             app_id: string;
             app_secret: string;
-            token: string;
             template_id: string | null;
             notify_wechat_enabled: number | null;
         }>();
 
     const incomingAppId = body.app_id === undefined ? undefined : normalizeNonEmptyString(body.app_id);
     const incomingAppSecret = body.app_secret === undefined ? undefined : normalizeNonEmptyString(body.app_secret);
-    const incomingToken = body.token === undefined ? undefined : normalizeNonEmptyString(body.token);
     const incomingTemplateId = body.template_id === undefined ? undefined : normalizeNonEmptyString(body.template_id);
 
     let incomingWeChatEnabled: 0 | 1 | undefined = undefined;
@@ -159,18 +153,15 @@ app.put("/wechat-test-account", async c => {
     // if the client calls this save API, it must submit a full config (no partial updates).
     if (incomingAppId === undefined) return c.json({ error: "app_id is required" }, 400);
     if (incomingAppSecret === undefined) return c.json({ error: "app_secret is required" }, 400);
-    if (incomingToken === undefined) return c.json({ error: "token is required" }, 400);
     if (incomingTemplateId === undefined) return c.json({ error: "template_id is required" }, 400);
 
     const appId = incomingAppId;
     const appSecret = incomingAppSecret;
-    const token = incomingToken;
     const templateId = incomingTemplateId;
     const wechatEnabled: 0 | 1 = (incomingWeChatEnabled ?? ((current?.notify_wechat_enabled ?? 0) ? 1 : 0)) as 0 | 1;
 
     if (!appId) return c.json({ error: "app_id is required" }, 400);
     if (!appSecret) return c.json({ error: "app_secret is required" }, 400);
-    if (!token) return c.json({ error: "token is required" }, 400);
     if (!templateId) return c.json({ error: "template_id is required" }, 400);
 
     // Explicit check for app_id duplication (do not rely on SQLite constraint only).
@@ -189,18 +180,17 @@ app.put("/wechat-test-account", async c => {
     try {
         await c.env.DB.prepare(
             `
-            INSERT INTO wechat_test_accounts (user_id, app_id, app_secret, token, template_id, notify_wechat_enabled, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            INSERT INTO wechat_test_accounts (user_id, app_id, app_secret, template_id, notify_wechat_enabled, updated_at)
+            VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
             ON CONFLICT(user_id) DO UPDATE SET
               app_id = excluded.app_id,
               app_secret = excluded.app_secret,
-              token = excluded.token,
               template_id = excluded.template_id,
               notify_wechat_enabled = excluded.notify_wechat_enabled,
               updated_at = CURRENT_TIMESTAMP
         `
         )
-            .bind(user.id, appId, appSecret, token, templateId, wechatEnabled)
+            .bind(user.id, appId, appSecret, templateId, wechatEnabled)
             .run();
     } catch (e) {
         const msg = String(e);

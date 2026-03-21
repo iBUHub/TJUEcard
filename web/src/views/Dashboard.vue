@@ -325,7 +325,6 @@
                                             clearable
                                             :disabled="notifyLoading || notifySaving"
                                         />
-                                        <div class="form-hint">用于拼接回调 URL：/wechat/&lt;appId&gt;/callback</div>
                                     </div>
                                 </el-form-item>
 
@@ -338,61 +337,6 @@
                                             :disabled="notifyLoading || notifySaving"
                                         />
                                         <div class="form-hint">仅用于服务端换取 access_token，请勿泄露。</div>
-                                    </div>
-                                </el-form-item>
-
-                                <el-form-item label="URL">
-                                    <div class="notify-field">
-                                        <el-input :model-value="wechatCallbackUrl" readonly :disabled="notifyLoading" />
-                                    </div>
-                                </el-form-item>
-
-                                <el-form-item label="Token">
-                                    <div class="notify-field">
-                                        <el-input
-                                            v-model="wechatForm.token"
-                                            placeholder="与测试号后台接口配置信息 Token 保持一致"
-                                            clearable
-                                            :disabled="notifyLoading || notifySaving"
-                                        >
-                                            <template #append>
-                                                <el-button
-                                                    :disabled="notifyLoading || notifySaving"
-                                                    @click="generateWeChatToken"
-                                                    >生成</el-button
-                                                >
-                                            </template>
-                                        </el-input>
-                                        <div class="notify-switch-row notify-switch-row-wrap">
-                                            <el-button
-                                                size="small"
-                                                :disabled="!wechatCallbackUrl || notifyLoading"
-                                                @click="copyText(wechatCallbackUrl)"
-                                                >复制 URL</el-button
-                                            >
-                                            <el-button
-                                                size="small"
-                                                :disabled="!wechatForm.token.trim() || notifyLoading"
-                                                @click="copyText(wechatForm.token.trim())"
-                                                >复制 Token</el-button
-                                            >
-                                        </div>
-                                        <div class="form-hint">测试号管理“接口配置信息”中填写该 URL 和 Token。</div>
-                                    </div>
-                                </el-form-item>
-
-                                <el-form-item label="JS安全域名">
-                                    <div class="notify-field">
-                                        <el-input :model-value="wechatJsDomain" readonly :disabled="notifyLoading" />
-                                        <div class="notify-switch-row" style="gap: 8px">
-                                            <el-button
-                                                size="small"
-                                                :disabled="notifyLoading || notifySaving"
-                                                @click="copyText(wechatJsDomain)"
-                                                >复制</el-button
-                                            >
-                                        </div>
-                                        <div class="form-hint">测试号后台“JS 接口安全域名”填写该域名。</div>
                                     </div>
                                 </el-form-item>
 
@@ -636,30 +580,13 @@ const wechatForm = ref({
     app_secret: '',
     notify_wechat_enabled: 0 as 0 | 1,
     template_id: '',
-    token: '',
     updated_at: '',
-});
-
-const resolveWeChatCallbackBase = () => {
-    // Default: use the current frontend origin as callback base.
-    // This works for both dev and prod as long as `/wechat/*` is routed/proxied to the backend.
-    return window.location.origin.replace(/\/+$/, '');
-};
-
-const wechatCallbackBase = resolveWeChatCallbackBase();
-
-const wechatCallbackUrl = computed(() => {
-    const appId = wechatForm.value.app_id.trim();
-    if (!appId) return '';
-    return `${wechatCallbackBase}/wechat/${appId}/callback`;
 });
 
 const wechatTemplateContent =
     '标题：{{keyword5.DATA}}\n房间：{{keyword1.DATA}}\n当前电量：{{keyword2.DATA}}\n提醒阈值：{{keyword3.DATA}}\n提示：{{keyword4.DATA}}';
 
 const wechatTemplateTitle = 'TJUEcard';
-
-const wechatJsDomain = window.location.hostname;
 
 const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
 
@@ -676,7 +603,6 @@ const resetWeChatForm = () => {
         app_secret: '',
         notify_wechat_enabled: 0 as 0 | 1,
         template_id: '',
-        token: '',
         updated_at: '',
     };
     wechatHasAppSecret.value = false;
@@ -745,7 +671,6 @@ const loadNotifySettings = async () => {
                 wechatBound.value = true;
                 wechatHasAppSecret.value = !!res.data.has_app_secret;
                 wechatForm.value.app_id = res.data.app_id || '';
-                wechatForm.value.token = res.data.token || '';
                 wechatForm.value.template_id = res.data.template_id || '';
                 wechatForm.value.notify_wechat_enabled = res.data.notify_wechat_enabled ? 1 : 0;
                 wechatForm.value.app_secret = res.data.app_secret || '';
@@ -786,18 +711,6 @@ const notifyDialogClosed = () => {
     resetWeChatForm();
 };
 
-const generateWeChatToken = () => {
-    try {
-        const bytes = new Uint8Array(16);
-        crypto.getRandomValues(bytes);
-        wechatForm.value.token = Array.from(bytes)
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-    } catch {
-        wechatForm.value.token = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-    }
-};
-
 const copyText = async (text: string) => {
     if (!text) return;
     try {
@@ -811,7 +724,7 @@ const copyText = async (text: string) => {
 const unbindWeChatTestAccount = async () => {
     try {
         await ElMessageBox.confirm(
-            '确认解绑该测试号？解绑将删除已保存的 appID/appsecret/Token/模板ID/接收者绑定，并清空关注者列表。解绑后如需继续使用需重新配置并重新关注以绑定 openid。',
+            '确认解绑该测试号？解绑将删除已保存的 appID/appsecret/模板ID/接收者绑定，并清空关注者列表。解绑后如需继续使用需重新配置并重新关注以绑定 openid。',
             '解绑测试号',
             {
                 confirmButtonText: '解绑',
@@ -872,7 +785,6 @@ const saveNotifySettings = async () => {
     const shouldSaveWeChat =
         wechatForm.value.notify_wechat_enabled === 1 ||
         !!wechatForm.value.app_id.trim() ||
-        !!wechatForm.value.token.trim() ||
         !!wechatForm.value.template_id.trim() ||
         !!wechatForm.value.app_secret.trim();
 
@@ -880,10 +792,6 @@ const saveNotifySettings = async () => {
     if (shouldSaveWeChat) {
         if (!wechatForm.value.app_id.trim()) {
             ElMessage.error('请填写微信测试号 appID');
-            return;
-        }
-        if (!wechatForm.value.token.trim()) {
-            ElMessage.error('请填写 Token（需与测试号后台一致）');
             return;
         }
         if (!wechatForm.value.app_secret.trim()) {
@@ -915,7 +823,6 @@ const saveNotifySettings = async () => {
             wechatForm.value.notify_wechat_enabled === 0 &&
             !wechatForm.value.app_id.trim() &&
             !wechatForm.value.app_secret.trim() &&
-            !wechatForm.value.token.trim() &&
             !wechatForm.value.template_id.trim();
 
         if (shouldClearWeChat) {
@@ -933,11 +840,9 @@ const saveNotifySettings = async () => {
             try {
                 await api.put('/user/wechat-test-account', {
                     app_id: wechatForm.value.app_id.trim(),
-                    // Send empty string if user clears it; backend will reject and prompt to fix.
                     app_secret: wechatForm.value.app_secret.trim(),
                     notify_wechat_enabled: wechatForm.value.notify_wechat_enabled,
                     template_id: wechatForm.value.template_id.trim(),
-                    token: wechatForm.value.token.trim(),
                 });
 
                 // Keep local state consistent without extra GET calls.
