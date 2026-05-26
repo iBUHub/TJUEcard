@@ -5,6 +5,7 @@
                 <h3 class="header-title">TJUEcard 仪表盘</h3>
                 <div class="header-right">
                     <el-button class="theme-toggle-btn" circle :icon="themeIcon" @click="toggleTheme" />
+                    <el-button class="tutorials-btn" circle :icon="Document" @click="openTutorialsPage" />
                     <el-button class="notify-settings-btn" circle :icon="Setting" @click="openNotifyDialog" />
                     <el-button class="logout-btn" circle :icon="LogoutDoorIcon" @click="confirmLogout" />
                 </div>
@@ -231,10 +232,7 @@
                                 </div>
                                 <div class="form-hint">
                                     想在微信收到通知？可通过邮箱转发到 QQ 邮箱并在微信开启“QQ 邮箱提醒”：
-                                    <a
-                                        href="https://github.com/iBUHub/TJUEcard/issues/13"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <a href="/tutorials#wechat-email" @click.prevent="openTutorial('wechat-email')"
                                         >查看教程</a
                                     >
                                 </div>
@@ -257,9 +255,8 @@
                                             填写钉钉群“机器人”提供的 webhook
                                             地址，保存并开启后会立即发送一条开启通知。如何获取 Webhook：
                                             <a
-                                                href="https://github.com/iBUHub/TJUEcard/issues/12"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                href="/tutorials#dingtalk-webhook"
+                                                @click.prevent="openTutorial('dingtalk-webhook')"
                                                 >查看教程</a
                                             >
                                         </div>
@@ -308,9 +305,8 @@
                                         <div class="form-hint">
                                             需用户自己注册测试号并关注后自动绑定 openid。如何配置：
                                             <a
-                                                href="https://github.com/iBUHub/TJUEcard/issues/16"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                href="/tutorials#wechat-test-account"
+                                                @click.prevent="openTutorial('wechat-test-account')"
                                                 >查看教程</a
                                             >
                                         </div>
@@ -497,7 +493,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { spacingText } from '../utils/pangu';
 import { useTheme } from '../composables/useTheme';
-import { Moon, Sunny, Monitor, Refresh, Setting } from '@element-plus/icons-vue';
+import { Moon, Sunny, Monitor, Refresh, Setting, Document } from '@element-plus/icons-vue';
 
 const LogoutDoorIcon = defineComponent({
     name: 'LogoutDoorIcon',
@@ -589,6 +585,17 @@ const wechatTemplateContent =
 const wechatTemplateTitle = 'TJUEcard';
 
 const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
+
+type TutorialSection = 'dingtalk-webhook' | 'wechat-email' | 'wechat-test-account';
+
+const openTutorial = (section: TutorialSection) => {
+    showNotifyDialog.value = false;
+    router.push({ hash: `#${section}`, path: '/tutorials' });
+};
+
+const openTutorialsPage = () => {
+    router.push('/tutorials');
+};
 
 watch(
     () => notifyForm.value.dingtalk_webhook_url,
@@ -1316,17 +1323,27 @@ onUnmounted(() => {
 .header-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    column-gap: 15px;
 }
 
-.notify-settings-btn {
+.header-right :deep(.el-button) {
+    margin-left: 0 !important;
+}
+
+.theme-toggle-btn,
+.tutorials-btn,
+.notify-settings-btn,
+.logout-btn {
     background: transparent;
     border: 1px solid rgba(255, 255, 255, 0.6);
     color: #fff;
     font-size: 18px;
 }
 
-.notify-settings-btn:hover {
+.theme-toggle-btn:hover,
+.tutorials-btn:hover,
+.notify-settings-btn:hover,
+.logout-btn:hover {
     background: rgba(255, 255, 255, 0.2);
     border-color: #fff;
 }
@@ -1428,9 +1445,6 @@ onUnmounted(() => {
 .notify-collapse :deep(.el-collapse-item__content) {
     box-shadow: none;
     padding-bottom: 0px;
-}
-
-.notify-collapse :deep(.el-collapse-item__content) {
     word-break: break-word;
 }
 
@@ -1441,29 +1455,6 @@ onUnmounted(() => {
 
 .notify-form :deep(.el-form-item__content) {
     min-width: 0;
-}
-
-.notify-section-divider {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin: 14px 0 6px;
-    color: var(--el-text-color-secondary);
-    font-size: 13px;
-    user-select: none;
-}
-
-.notify-section-divider::before,
-.notify-section-divider::after {
-    content: '';
-    height: 1px;
-    background: var(--el-border-color-lighter);
-    flex: 1;
-}
-
-.notify-section-divider > span {
-    padding: 0 2px;
-    white-space: nowrap;
 }
 
 .threshold-field {
@@ -1486,32 +1477,8 @@ onUnmounted(() => {
     font-weight: 600;
 }
 
-.logout-btn {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    color: #fff;
-    font-size: 18px;
-}
-
 .logout-btn :deep(.el-icon) {
     font-size: 20px;
-}
-
-.logout-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #fff;
-}
-
-.theme-toggle-btn {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.6);
-    color: #fff;
-    font-size: 18px;
-}
-
-.theme-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: #fff;
 }
 
 .actions {
@@ -1607,6 +1574,29 @@ onUnmounted(() => {
 
 /* Mobile Responsive Styles for Add Room Dialog */
 @media (max-width: 768px) {
+    .header-title {
+        font-size: 18px;
+    }
+
+    .header-right {
+        column-gap: 10px;
+    }
+
+    .theme-toggle-btn,
+    .tutorials-btn,
+    .notify-settings-btn,
+    .logout-btn {
+        width: 30px;
+        height: 30px;
+        min-height: 30px;
+        padding: 3px;
+        font-size: 16px;
+    }
+
+    .logout-btn :deep(.el-icon) {
+        font-size: 18px;
+    }
+
     /* Dialog responsive width and max height */
     :deep(.add-room-dialog) {
         width: 95% !important;
@@ -1682,6 +1672,27 @@ onUnmounted(() => {
 
 /* Extra small screens */
 @media (max-width: 480px) {
+    .header-title {
+        font-size: 16px;
+    }
+    .header-right {
+        column-gap: 5px;
+    }
+    .theme-toggle-btn,
+    .tutorials-btn,
+    .notify-settings-btn,
+    .logout-btn {
+        width: 28px;
+        height: 28px;
+        min-height: 28px;
+        padding: 0px;
+        font-size: 15px;
+    }
+
+    .logout-btn :deep(.el-icon) {
+        font-size: 17px;
+    }
+
     :deep(.add-room-dialog .el-dialog__body) {
         max-height: calc(100vh - 180px);
         padding: 12px 15px;

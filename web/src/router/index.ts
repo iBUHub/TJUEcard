@@ -8,8 +8,19 @@ const router = createRouter({
         { component: Login, meta: { guest: true }, path: '/login' },
         { component: () => import('../views/Register.vue'), meta: { guest: true }, path: '/register' },
         { component: () => import('../views/ResetPassword.vue'), meta: { guest: true }, path: '/reset' },
+        { component: () => import('../views/Tutorials.vue'), path: '/tutorials' },
         { component: Dashboard, meta: { requiresAuth: true }, path: '/' },
     ],
+    scrollBehavior(to) {
+        if (to.hash) {
+            return {
+                behavior: 'smooth',
+                el: to.hash,
+                top: 70,
+            };
+        }
+        return { top: 0 };
+    },
 });
 
 router.beforeEach((to, _from, next) => {
