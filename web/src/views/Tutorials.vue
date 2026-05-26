@@ -12,9 +12,15 @@
 
         <el-main class="tutorials-main">
             <nav class="tutorial-nav" aria-label="教程目录">
-                <a href="#dingtalk-webhook">钉钉群机器人</a>
-                <a href="#wechat-email">微信通知方法1</a>
-                <a href="#wechat-test-account">微信通知方法2</a>
+                <a
+                    v-for="section in tutorialSections"
+                    :key="section.id"
+                    :class="{ active: activeSection === section.id }"
+                    :href="`#${section.id}`"
+                    @click="activeSection = section.id"
+                >
+                    {{ section.label }}
+                </a>
             </nav>
 
             <article id="dingtalk-webhook" class="tutorial-section">
@@ -357,6 +363,67 @@
     </el-container>
 </template>
 
+<script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+
+const tutorialSections = [
+    { id: 'dingtalk-webhook', label: '钉钉群机器人' },
+    { id: 'wechat-email', label: '微信通知方法1' },
+    { id: 'wechat-test-account', label: '微信通知方法2' },
+];
+
+const activeSection = ref(tutorialSections[0].id);
+let observer: IntersectionObserver | null = null;
+
+const updateActiveSectionFromHash = () => {
+    const hashSection = tutorialSections.find(section => `#${section.id}` === window.location.hash);
+    if (!hashSection) return false;
+
+    activeSection.value = hashSection.id;
+    return true;
+};
+
+const updateActiveSection = () => {
+    const scrollOffset = 140;
+    let current = tutorialSections[0].id;
+
+    for (const section of tutorialSections) {
+        const element = document.getElementById(section.id);
+        if (element && element.getBoundingClientRect().top <= scrollOffset) {
+            current = section.id;
+        }
+    }
+
+    activeSection.value = current;
+};
+
+onMounted(() => {
+    nextTick(() => {
+        updateActiveSectionFromHash();
+
+        observer = new IntersectionObserver(updateActiveSection, {
+            rootMargin: '-120px 0px -65% 0px',
+            threshold: 0,
+        });
+
+        tutorialSections.forEach(section => {
+            const element = document.getElementById(section.id);
+            if (element) observer?.observe(element);
+        });
+
+        window.addEventListener('scroll', updateActiveSection, { passive: true });
+        window.addEventListener('hashchange', updateActiveSectionFromHash);
+        if (!updateActiveSectionFromHash()) updateActiveSection();
+    });
+});
+
+onBeforeUnmount(() => {
+    observer?.disconnect();
+    window.removeEventListener('scroll', updateActiveSection);
+    window.removeEventListener('hashchange', updateActiveSectionFromHash);
+});
+</script>
+
 <style scoped>
 .tutorials-page {
     min-height: 100vh;
@@ -453,6 +520,13 @@ html.dark .tutorial-nav {
 .tutorial-nav a:hover {
     color: #667eea;
     border-color: #667eea;
+}
+
+.tutorial-nav a.active {
+    color: #fff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: transparent;
+    box-shadow: 0 8px 18px rgba(102, 126, 234, 0.28);
 }
 
 .tutorial-section {

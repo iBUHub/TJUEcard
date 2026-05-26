@@ -1676,7 +1676,7 @@ onUnmounted(() => {
         font-size: 16px;
     }
     .header-right {
-        column-gap: 5px;
+        column-gap: 10px;
     }
     .theme-toggle-btn,
     .tutorials-btn,
