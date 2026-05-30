@@ -1,5 +1,3 @@
-<a name="readme-top"></a>
-
 > [!WARNING]
 > 中心化查询的 v1 版本已上线，如需本地部署的 v0 版本，请移步至 [v0-final][link-v0-final] 分支查看。
 
@@ -42,17 +40,19 @@
 1. **注册与登录**
    访问我们的「[应用首页](https://tjuecard.ibuhub.com)」，点击「立即注册」按钮创建一个新账户。**注意：仅支持天津大学邮箱（@tju.edu.cn）注册。** 注册完成后，使用您的凭据登录系统。
 
-   ![][guide-01]
+   <img width="1000" alt="image" src="https://github.com/user-attachments/assets/8105fdbb-dc3d-445a-b103-d0a0a6d69dd3" />
 
 2. **添加房间**
    登录后进入仪表盘，点击「添加房间」按钮。您需要提供房间的详细信息（如校区、楼栋、房间号）以便系统进行绑定。
 
-   ![][guide-02]
+     <img width="1000" alt="image" src="https://github.com/user-attachments/assets/79d33851-7804-46ed-9489-dbaed32d6c53" />
+
 
 3. **设置阈值**
    在房间列表中，您可以为每个房间设定「电费报警阈值」，我们的 Agent 会定期查询电费。当查询到的剩余电量低于该值时，系统将会向您注册的邮箱发送提醒通知。
 
-   ![][guide-03]
+   <img width="1000" alt="image" src="https://github.com/user-attachments/assets/83f8bd9b-52d0-4e72-ab95-784337b420b8" />
+
 
 4. **配置钉钉通知（可选）**
    TJUEcard 支持钉钉群机器人通知。你可以在「通知设置」中填写钉钉机器人 Webhook 并开启钉钉通知。详细教程见：
