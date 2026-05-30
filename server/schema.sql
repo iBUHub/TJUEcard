@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     
     alias_name TEXT, 
     is_active BOOLEAN DEFAULT 1,
-    notification_threshold FLOAT DEFAULT -1,
+    notification_threshold FLOAT DEFAULT 20,
     last_notified_at TIMESTAMP,
     
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

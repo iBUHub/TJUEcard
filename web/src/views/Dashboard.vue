@@ -878,7 +878,7 @@ const addForm = ref({
     area_id: '',
     building_id: '',
     floor_id: '',
-    notification_threshold: -1,
+    notification_threshold: 20,
     room_id: '',
     system_id: '',
 });
@@ -1151,7 +1151,7 @@ const resetForm = () => {
         area_id: '',
         building_id: '',
         floor_id: '',
-        notification_threshold: -1,
+        notification_threshold: 20,
         room_id: '',
         system_id: '',
     };

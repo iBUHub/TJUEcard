@@ -3,6 +3,7 @@ import { authMiddleware } from "../middlewares";
 import { Bindings, Variables } from "../types";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+const DEFAULT_NOTIFICATION_THRESHOLD = 20;
 
 app.use("*", authMiddleware);
 
@@ -91,7 +92,7 @@ app.post("/", async c => {
            is_active = 1
        `
         )
-            .bind(user.id, room.id, alias_name, notification_threshold ?? -1)
+            .bind(user.id, room.id, alias_name, notification_threshold ?? DEFAULT_NOTIFICATION_THRESHOLD)
             .run();
     } catch (e) {
         return c.json({ error: "订阅失败: " + String(e) }, 500);
@@ -175,7 +176,7 @@ app.put("/:id", async c => {
             WHERE user_id = ? AND room_id = ?
             `
         )
-            .bind(alias_name, notification_threshold ?? -1, user.id, oldRoomId)
+            .bind(alias_name, notification_threshold ?? DEFAULT_NOTIFICATION_THRESHOLD, user.id, oldRoomId)
             .run();
     } else {
         // Different room, atomic switch
@@ -192,7 +193,7 @@ app.put("/:id", async c => {
                     notification_threshold = excluded.notification_threshold,
                     is_active = 1
                 `
-            ).bind(user.id, targetRoom.id, alias_name, notification_threshold ?? -1),
+            ).bind(user.id, targetRoom.id, alias_name, notification_threshold ?? DEFAULT_NOTIFICATION_THRESHOLD),
         ];
         await c.env.DB.batch(batch);
     }
