@@ -141,9 +141,16 @@ app.get("/query", async c => {
         `
         SELECT
             r.id,
+            r.system_id,
+            r.area_id,
+            r.building_id,
+            r.floor_id,
+            r.room_id,
             r.full_name,
+            r.last_query_time,
             r.last_electricity,
             r.last_query_status,
+            r.last_message,
             r.next_query_time,
             s.alias_name,
             s.notification_threshold,
@@ -159,13 +166,20 @@ app.get("/query", async c => {
         .bind(payload.uid, ...roomIds)
         .all<{
             alias_name: string | null;
+            area_id: string;
+            building_id: string | null;
+            floor_id: string | null;
             full_name: string | null;
             id: number;
             is_active: number;
             last_electricity: number | null;
+            last_message: string | null;
             last_query_status: string | null;
+            last_query_time: string | null;
             next_query_time: string | null;
             notification_threshold: number;
+            room_id: string;
+            system_id: string;
         }>();
 
     return c.json({
