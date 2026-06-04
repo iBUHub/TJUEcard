@@ -120,7 +120,7 @@ app.post("/query-key", authMiddleware, async c => {
 });
 
 app.get("/query", async c => {
-    const token = getBearerToken(c.req.header("Authorization"));
+    const token = getBearerToken(c.req.header("Authorization")) || c.req.query("key");
     if (!token) return c.json({ error: "缺少查询 Key" }, 401);
 
     let payload: unknown;

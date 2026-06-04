@@ -509,6 +509,18 @@
                                         <div v-if="generatedQueryKey" class="query-key-section">
                                             <div class="query-key-section-label">Key</div>
                                             <div class="query-key-field">
+                                                <el-input :model-value="queryKeyUrl" readonly />
+                                                <div class="query-key-copy-row">
+                                                    <span class="form-hint">可直接复制该 URL 作为查询地址。</span>
+                                                    <el-button
+                                                        :icon="CopyDocument"
+                                                        type="primary"
+                                                        plain
+                                                        size="small"
+                                                        @click="copyText(queryKeyUrl)"
+                                                        >复制 URL</el-button
+                                                    >
+                                                </div>
                                                 <el-input
                                                     :model-value="generatedQueryKey"
                                                     type="textarea"
@@ -527,8 +539,8 @@
                                                     >
                                                 </div>
                                                 <div class="form-hint">
-                                                    调用：GET /api/electricity/query，Header 使用 Authorization: Bearer
-                                                    上方 Key。
+                                                    也可调用：GET {{ queryKeyEndpoint }}，Header 使用 Authorization:
+                                                    Bearer 上方 Key。
                                                 </div>
                                                 <div v-if="queryKeyExpiresAt" class="form-hint">
                                                     过期时间：{{ queryKeyExpiresAt }}
@@ -694,6 +706,13 @@ const wechatTemplateTitle = 'TJUEcard';
 
 const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
 const activeRooms = computed(() => rooms.value.filter(room => (room.is_active ?? 1) === 1));
+const queryKeyEndpoint = computed(() => new URL('/api/electricity/query', window.location.origin).toString());
+const queryKeyUrl = computed(() => {
+    if (!generatedQueryKey.value) return '';
+    const url = new URL(queryKeyEndpoint.value);
+    url.searchParams.set('key', generatedQueryKey.value);
+    return url.toString();
+});
 
 type TutorialSection = 'dingtalk-webhook' | 'wechat-email' | 'wechat-test-account';
 
