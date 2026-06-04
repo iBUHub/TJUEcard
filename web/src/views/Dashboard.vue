@@ -437,6 +437,109 @@
                             </el-form>
                         </el-collapse-item>
                     </el-collapse>
+
+                    <div class="settings-section-title">高级设置</div>
+
+                    <el-collapse v-model="notifyCollapseActive" class="notify-collapse">
+                        <el-collapse-item title="生成查询 Key" name="advanced">
+                            <el-form class="notify-form" label-width="140px" label-position="left">
+                                <el-form-item label="生成查询 Key">
+                                    <div class="notify-field">
+                                        <div class="query-key-section">
+                                            <div class="query-key-section-label">房间</div>
+                                            <div class="query-key-field">
+                                                <el-checkbox-group
+                                                    v-model="queryKeyRoomIds"
+                                                    class="query-key-room-list"
+                                                >
+                                                    <el-checkbox
+                                                        v-for="room in activeRooms"
+                                                        :key="room.id"
+                                                        :label="room.id"
+                                                        class="query-key-room-item"
+                                                    >
+                                                        <span>
+                                                            {{
+                                                                spacingText(
+                                                                    room.alias_name ||
+                                                                        room.full_name ||
+                                                                        `房间 ${room.id}`
+                                                                )
+                                                            }}
+                                                        </span>
+                                                        <span
+                                                            v-if="room.full_name && room.alias_name"
+                                                            class="query-key-room-full-name"
+                                                        >
+                                                            {{ spacingText(room.full_name) }}
+                                                        </span>
+                                                    </el-checkbox>
+                                                </el-checkbox-group>
+                                                <div v-if="activeRooms.length === 0" class="form-hint">
+                                                    暂无已开启订阅的房间。
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="query-key-section">
+                                            <div class="query-key-section-label">有效期</div>
+                                            <div class="query-key-field">
+                                                <el-radio-group v-model="queryKeyExpiresIn">
+                                                    <el-radio-button label="7d">7 天</el-radio-button>
+                                                    <el-radio-button label="30d">30 天</el-radio-button>
+                                                    <el-radio-button label="90d">90 天</el-radio-button>
+                                                    <el-radio-button label="365d">1 年</el-radio-button>
+                                                    <el-radio-button label="forever">永久</el-radio-button>
+                                                </el-radio-group>
+                                                <div class="notify-switch-row">
+                                                    <el-button
+                                                        type="primary"
+                                                        size="small"
+                                                        :loading="queryKeyLoading"
+                                                        :disabled="
+                                                            queryKeyRoomIds.length === 0 || activeRooms.length === 0
+                                                        "
+                                                        @click="generateQueryKey"
+                                                        >生成</el-button
+                                                    >
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div v-if="generatedQueryKey" class="query-key-section">
+                                            <div class="query-key-section-label">Key</div>
+                                            <div class="query-key-field">
+                                                <el-input
+                                                    :model-value="generatedQueryKey"
+                                                    type="textarea"
+                                                    :rows="5"
+                                                    readonly
+                                                />
+                                                <div class="query-key-copy-row">
+                                                    <span class="form-hint">仅显示一次，关闭后需要重新生成。</span>
+                                                    <el-button
+                                                        :icon="CopyDocument"
+                                                        type="primary"
+                                                        plain
+                                                        size="small"
+                                                        @click="copyText(generatedQueryKey)"
+                                                        >复制</el-button
+                                                    >
+                                                </div>
+                                                <div class="form-hint">
+                                                    调用：GET /api/electricity/query，Header 使用 Authorization: Bearer
+                                                    上方 Key。
+                                                </div>
+                                                <div v-if="queryKeyExpiresAt" class="form-hint">
+                                                    过期时间：{{ queryKeyExpiresAt }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </el-form-item>
+                            </el-form>
+                        </el-collapse-item>
+                    </el-collapse>
                 </div>
 
                 <template #footer>
@@ -493,7 +596,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import { spacingText } from '../utils/pangu';
 import { useTheme } from '../composables/useTheme';
-import { Moon, Sunny, Monitor, Refresh, Setting, Document } from '@element-plus/icons-vue';
+import { Moon, Sunny, Monitor, Refresh, Setting, Document, CopyDocument } from '@element-plus/icons-vue';
 
 const LogoutDoorIcon = defineComponent({
     name: 'LogoutDoorIcon',
@@ -556,6 +659,11 @@ const showAddDialog = ref(false);
 const isEditMode = ref(false);
 const editingRoomId = ref<number | ''>('');
 const submitLoading = ref(false);
+const queryKeyLoading = ref(false);
+const queryKeyRoomIds = ref<number[]>([]);
+const queryKeyExpiresIn = ref('90d');
+const generatedQueryKey = ref('');
+const queryKeyExpiresAt = ref('');
 
 const showNotifyDialog = ref(false);
 const notifyCollapseActive = ref<string[]>([]);
@@ -585,6 +693,7 @@ const wechatTemplateContent =
 const wechatTemplateTitle = 'TJUEcard';
 
 const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
+const activeRooms = computed(() => rooms.value.filter(room => (room.is_active ?? 1) === 1));
 
 type TutorialSection = 'dingtalk-webhook' | 'wechat-email' | 'wechat-test-account';
 
@@ -595,6 +704,49 @@ const openTutorial = (section: TutorialSection) => {
 
 const openTutorialsPage = () => {
     router.push('/tutorials');
+};
+
+const resetQueryKeyDialog = () => {
+    queryKeyLoading.value = false;
+    queryKeyRoomIds.value = [];
+    queryKeyExpiresIn.value = '90d';
+    generatedQueryKey.value = '';
+    queryKeyExpiresAt.value = '';
+};
+
+const formatQueryKeyExpiresAt = (expiresAt: string) => {
+    const date = new Date(expiresAt);
+    if (isNaN(date.getTime())) return expiresAt;
+
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+};
+
+const generateQueryKey = async () => {
+    if (queryKeyRoomIds.value.length === 0) {
+        ElMessage.warning('请选择至少一个房间');
+        return;
+    }
+
+    queryKeyLoading.value = true;
+    try {
+        const res = await api.post('/electricity/query-key', {
+            expires_in: queryKeyExpiresIn.value,
+            room_ids: queryKeyRoomIds.value,
+        });
+        generatedQueryKey.value = res.data.key || '';
+        queryKeyExpiresAt.value = res.data.expires_at ? formatQueryKeyExpiresAt(res.data.expires_at) : '';
+        ElMessage.success('查询 Key 已生成');
+    } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ElMessage.error((e as any).response?.data?.error || '生成查询 Key 失败');
+    } finally {
+        queryKeyLoading.value = false;
+    }
 };
 
 watch(
@@ -702,6 +854,7 @@ const openNotifyDialog = async () => {
     showNotifyDialog.value = true;
     notifyCollapseActive.value = [];
     notifyReady.value = false;
+    queryKeyRoomIds.value = activeRooms.value.map(room => room.id);
     await loadNotifySettings();
     // Auto sync followers from WeChat on open (silent, non-blocking).
     if (wechatBound.value) void refreshWeChatFollowers({ silent: true });
@@ -716,6 +869,7 @@ const notifyDialogClosed = () => {
     wechatHasAppSecret.value = false;
     wechatFollowersSyncError.value = '';
     resetWeChatForm();
+    resetQueryKeyDialog();
 };
 
 const copyText = async (text: string) => {
@@ -1457,6 +1611,90 @@ onUnmounted(() => {
     min-width: 0;
 }
 
+.settings-section-title {
+    color: #667eea;
+    font-weight: 600;
+    font-size: 18px;
+    line-height: 1.4;
+    margin: 18px 0 10px;
+}
+
+.query-key-field {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.query-key-section {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 56px minmax(0, 1fr);
+    column-gap: 12px;
+    align-items: flex-start;
+}
+
+.query-key-section-label {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+    line-height: 32px;
+}
+
+.query-key-room-list {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
+    gap: 8px;
+}
+
+.query-key-room-item {
+    width: 100%;
+    height: auto;
+    min-height: 54px;
+    line-height: 1.25;
+    margin-right: 0;
+    padding: 8px 10px;
+    border: 1px solid var(--el-border-color-lighter);
+    border-radius: 8px;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: flex-start;
+    white-space: normal;
+}
+
+.query-key-room-item :deep(.el-checkbox__label) {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.query-key-room-item :deep(.el-checkbox__input) {
+    margin-top: 2px;
+}
+
+.query-key-room-full-name {
+    color: var(--el-text-color-secondary);
+    font-size: 12px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+}
+
+.query-key-copy-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .threshold-field {
     width: 100%;
     display: flex;
@@ -1668,6 +1906,31 @@ onUnmounted(() => {
         flex: 1;
         max-width: 120px;
     }
+
+    .query-key-section {
+        grid-template-columns: minmax(0, 1fr);
+        row-gap: 4px;
+    }
+
+    .query-key-section-label {
+        line-height: 1.4;
+    }
+
+    .query-key-room-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .query-key-field :deep(.el-radio-group) {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        width: 100%;
+    }
+
+    .query-key-field :deep(.el-radio-button__inner) {
+        width: 100%;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
 }
 
 /* Extra small screens */
@@ -1709,6 +1972,15 @@ onUnmounted(() => {
 
     :deep(.dialog-footer .el-button) {
         font-size: 14px;
+    }
+
+    .query-key-room-item {
+        min-height: 54px;
+        padding: 8px;
+    }
+
+    .query-key-field :deep(.el-radio-group) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
