@@ -706,7 +706,17 @@ const wechatTemplateTitle = 'TJUEcard';
 
 const dingtalkSwitchDisabled = computed(() => !notifyForm.value.dingtalk_webhook_url.trim());
 const activeRooms = computed(() => rooms.value.filter(room => (room.is_active ?? 1) === 1));
-const queryKeyEndpoint = computed(() => new URL('/api/electricity/query', window.location.origin).toString());
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+const buildApiUrl = (path: string) => {
+    const base = apiBaseUrl.startsWith('http') ? new URL(apiBaseUrl) : new URL(apiBaseUrl, window.location.origin);
+    const basePath = base.pathname.replace(/\/$/, '');
+    const apiPath = path.startsWith('/') ? path : `/${path}`;
+    base.pathname = `${basePath}${apiPath}`;
+    base.search = '';
+    base.hash = '';
+    return base.toString();
+};
+const queryKeyEndpoint = computed(() => buildApiUrl('/electricity/query'));
 const queryKeyUrl = computed(() => {
     if (!generatedQueryKey.value) return '';
     const url = new URL(queryKeyEndpoint.value);
