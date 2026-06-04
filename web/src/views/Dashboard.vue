@@ -502,6 +502,7 @@
                                                         @click="generateQueryKey"
                                                         >生成</el-button
                                                     >
+                                                    <span class="form-hint">仅显示一次，关闭后需要重新生成。</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -509,9 +510,41 @@
                                         <div v-if="generatedQueryKey" class="query-key-section">
                                             <div class="query-key-section-label">Key</div>
                                             <div class="query-key-field">
+                                                <div class="form-hint">
+                                                    调用方法1：<code class="query-key-inline-code"
+                                                        >GET {{ queryKeyEndpoint }}</code
+                                                    >，Header 使用
+                                                    <code class="query-key-inline-code"
+                                                        >Authorization: Bearer &lt;下方 Key&gt;</code
+                                                    >。
+                                                </div>
+                                                <el-input
+                                                    :model-value="generatedQueryKey"
+                                                    type="textarea"
+                                                    :rows="5"
+                                                    readonly
+                                                />
+                                                <div class="query-key-copy-row">
+                                                    <el-button
+                                                        :icon="CopyDocument"
+                                                        type="primary"
+                                                        plain
+                                                        size="small"
+                                                        @click="copyText(generatedQueryKey)"
+                                                        >复制 Key</el-button
+                                                    >
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div v-if="generatedQueryKey" class="query-key-section">
+                                            <div class="query-key-section-label">URL</div>
+                                            <div class="query-key-field">
+                                                <span class="form-hint"
+                                                    >调用方法2：可直接复制该 URL 作为查询地址。</span
+                                                >
                                                 <el-input :model-value="queryKeyUrl" readonly />
                                                 <div class="query-key-copy-row">
-                                                    <span class="form-hint">可直接复制该 URL 作为查询地址。</span>
                                                     <el-button
                                                         :icon="CopyDocument"
                                                         type="primary"
@@ -521,31 +554,10 @@
                                                         >复制 URL</el-button
                                                     >
                                                 </div>
-                                                <el-input
-                                                    :model-value="generatedQueryKey"
-                                                    type="textarea"
-                                                    :rows="5"
-                                                    readonly
-                                                />
-                                                <div class="query-key-copy-row">
-                                                    <span class="form-hint">仅显示一次，关闭后需要重新生成。</span>
-                                                    <el-button
-                                                        :icon="CopyDocument"
-                                                        type="primary"
-                                                        plain
-                                                        size="small"
-                                                        @click="copyText(generatedQueryKey)"
-                                                        >复制</el-button
-                                                    >
-                                                </div>
-                                                <div class="form-hint">
-                                                    也可调用：GET {{ queryKeyEndpoint }}，Header 使用 Authorization:
-                                                    Bearer 上方 Key。
-                                                </div>
-                                                <div v-if="queryKeyExpiresAt" class="form-hint">
-                                                    过期时间：{{ queryKeyExpiresAt }}
-                                                </div>
                                             </div>
+                                        </div>
+                                        <div v-if="queryKeyExpiresAt" class="form-hint">
+                                            过期时间：{{ queryKeyExpiresAt }}。泄露后在有效期内无法撤销。
                                         </div>
                                     </div>
                                 </el-form-item>
@@ -1722,6 +1734,16 @@ onUnmounted(() => {
     justify-content: space-between;
     gap: 12px;
     flex-wrap: wrap;
+}
+
+.query-key-inline-code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--el-fill-color-light);
+    color: var(--el-text-color-primary);
+    font-size: 12px;
+    font-family: var(--el-font-family);
+    word-break: break-all;
 }
 
 .threshold-field {
