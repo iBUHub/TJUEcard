@@ -4,6 +4,7 @@ import { cors } from "hono/cors";
 import auth from "./routes/auth";
 import rooms from "./routes/rooms";
 import agent from "./routes/agent";
+import electricity from "./routes/electricity";
 import user from "./routes/user";
 import { getLocalDb, D1Adapter } from "./db";
 
@@ -67,6 +68,7 @@ app.get("/", c => {
 
 app.route("/auth", auth);
 app.route("/rooms", rooms);
+app.route("/electricity", electricity);
 app.route("/agent", agent);
 app.route("/user", user);
 
