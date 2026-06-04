@@ -40,7 +40,7 @@ Aims to solve the pain point of sudden power outages due to untimely top-ups.
 ## 🚀 Getting Started
 
 1. **Registration & Login**
-   Visit our [Home Page](https://tjuecard.ibuhub.com) and click "Register" to create a new account. **Note: Only Tianjin University email addresses (@tju.edu.cn) are supported for registration.** After registration, log in with your credentials.
+   Visit our [Home Page](https://tjuecard.ibuhub.com) and click "Register" to create a new account. **Note: Only numeric Tianjin University email addresses (digits@tju.edu.cn) are supported for registration.** After registration, log in with your credentials.
 
    ![][guide-01]
 
