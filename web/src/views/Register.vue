@@ -8,11 +8,7 @@
             </template>
             <el-form :model="form" class="login-form">
                 <el-form-item>
-                    <el-input
-                        v-model="form.email"
-                        placeholder="数字邮箱（数字@tju.edu.cn）"
-                        class="input-field"
-                    ></el-input>
+                    <el-input v-model="form.email" placeholder="邮箱" class="input-field"></el-input>
                 </el-form-item>
                 <el-form-item>
                     <div class="verification-row">
@@ -72,25 +68,22 @@ const sendingCode = ref(false);
 const countdown = ref(0);
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase();
-const isNumericTjuEmail = (email: string) => /^\d+@tju\.edu\.cn$/.test(normalizeEmail(email));
-
-const validateRegistrationEmail = () => {
-    const email = normalizeEmail(form.value.email);
-    if (!email) {
-        return '请输入邮箱';
-    }
-    if (!isNumericTjuEmail(email)) {
-        return '仅支持数字 @tju.edu.cn 邮箱注册';
-    }
-    form.value.email = email;
-    return '';
-};
+const isTjuEmail = (email: string) => email.toLowerCase().endsWith('@tju.edu.cn');
 
 const handleSendCode = async () => {
-    const emailError = validateRegistrationEmail();
-    if (emailError) {
-        ElMessage.error(emailError);
+    if (!form.value.email) {
+        ElMessage.error('请先输入邮箱');
+        return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.value.email)) {
+        ElMessage.error('请输入有效的邮箱地址');
+        return;
+    }
+    if (!isTjuEmail(form.value.email)) {
+        ElMessage.error('仅支持 @tju.edu.cn 邮箱注册');
         return;
     }
 
@@ -125,9 +118,17 @@ const handleSendCode = async () => {
 };
 
 const handleRegister = async () => {
-    const emailError = validateRegistrationEmail();
-    if (emailError) {
-        ElMessage.error(emailError);
+    if (!form.value.email) {
+        ElMessage.error('请输入邮箱');
+        return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.value.email)) {
+        ElMessage.error('请输入有效的邮箱地址');
+        return;
+    }
+    if (!isTjuEmail(form.value.email)) {
+        ElMessage.error('仅支持 @tju.edu.cn 邮箱注册');
         return;
     }
     if (!form.value.code) {

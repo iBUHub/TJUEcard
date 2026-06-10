@@ -111,24 +111,21 @@ function generateVerificationCode(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-function normalizeEmail(email: string): string {
-    return email.trim().toLowerCase();
-}
-
-function isNumericTjuEmail(email: string): boolean {
-    return /^\d+@tju\.edu\.cn$/.test(email);
-}
-
 // Send verification code endpoint
 auth.post("/send-verification", async c => {
-    const { email: rawEmail } = await c.req.json<{ email: string }>();
+    const { email } = await c.req.json<{ email: string }>();
 
-    if (!rawEmail) return c.json({ error: "请输入邮箱" }, 400);
+    if (!email) return c.json({ error: "请输入邮箱" }, 400);
 
-    const email = normalizeEmail(rawEmail);
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return c.json({ error: "Invalid email format" }, 400);
+    }
 
-    if (!isNumericTjuEmail(email)) {
-        return c.json({ error: "仅支持数字 @tju.edu.cn 邮箱注册" }, 400);
+    // Validate email domain - only allow tju.edu.cn
+    if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
+        return c.json({ error: "仅支持 @tju.edu.cn 邮箱注册" }, 400);
     }
 
     // Check if user already exists
@@ -188,15 +185,14 @@ auth.post("/send-verification", async c => {
 });
 
 auth.post("/register", async c => {
-    const { email: rawEmail, password, code } = await c.req.json<{ email: string; password: string; code: string }>();
+    const { email, password, code } = await c.req.json<{ email: string; password: string; code: string }>();
 
-    if (!rawEmail || !password) return c.json({ error: "邮箱和密码不能为空" }, 400);
+    if (!email || !password) return c.json({ error: "邮箱和密码不能为空" }, 400);
     if (!code) return c.json({ error: "验证码不能为空" }, 400);
 
-    const email = normalizeEmail(rawEmail);
-
-    if (!isNumericTjuEmail(email)) {
-        return c.json({ error: "仅支持数字 @tju.edu.cn 邮箱注册" }, 400);
+    // Validate email domain - only allow tju.edu.cn
+    if (!email.toLowerCase().endsWith("@tju.edu.cn")) {
+        return c.json({ error: "仅支持 @tju.edu.cn 邮箱注册" }, 400);
     }
 
     const now = Math.floor(Date.now() / 1000);
