@@ -9,6 +9,12 @@ const router = createRouter({
         { component: () => import('../views/Register.vue'), meta: { guest: true }, path: '/register' },
         { component: () => import('../views/ResetPassword.vue'), meta: { guest: true }, path: '/reset' },
         { component: () => import('../views/Tutorials.vue'), path: '/tutorials' },
+        {
+            component: () => import('../views/RoomStats.vue'),
+            meta: { requiresAuth: true },
+            name: 'room-stats',
+            path: '/rooms/:id/stats',
+        },
         { component: Dashboard, meta: { requiresAuth: true }, path: '/' },
     ],
     scrollBehavior(to) {

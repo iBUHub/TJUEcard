@@ -4,8 +4,17 @@ import { Bindings, Variables } from "../types";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 const DEFAULT_NOTIFICATION_THRESHOLD = 20;
+const DEFAULT_HISTORY_DAYS = 30;
+const MAX_HISTORY_DAYS = 180;
+const MAX_HISTORY_LIMIT = 2000;
 
 app.use("*", authMiddleware);
+
+function clampQueryNumber(value: string | undefined, fallback: number, min: number, max: number): number {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(Math.max(Math.floor(parsed), min), max);
+}
 
 app.get("/", async c => {
     const user = c.get("user");
@@ -20,6 +29,64 @@ app.get("/", async c => {
         .bind(user.id)
         .all<unknown>();
     return c.json(rooms.results);
+});
+
+app.get("/:id/readings", async c => {
+    const user = c.get("user");
+    const roomId = Number(c.req.param("id"));
+    if (!Number.isInteger(roomId) || roomId <= 0) return c.json({ error: "房间 ID 无效" }, 400);
+
+    const days = clampQueryNumber(c.req.query("days"), DEFAULT_HISTORY_DAYS, 1, MAX_HISTORY_DAYS);
+    const limit = clampQueryNumber(c.req.query("limit"), 500, 1, MAX_HISTORY_LIMIT);
+
+    const room = await c.env.DB.prepare(
+        `
+        SELECT
+            r.id,
+            r.full_name,
+            r.last_electricity,
+            r.last_query_status,
+            r.last_query_time,
+            r.room_id,
+            s.alias_name
+        FROM subscriptions s
+        JOIN rooms r ON s.room_id = r.id
+        WHERE s.user_id = ?
+          AND s.room_id = ?
+    `
+    )
+        .bind(user.id, roomId)
+        .first<{
+            alias_name: string | null;
+            full_name: string | null;
+            id: number;
+            last_electricity: number | null;
+            last_query_status: string | null;
+            last_query_time: string | null;
+            room_id: string;
+        }>();
+
+    if (!room) return c.json({ error: "房间不存在或未订阅" }, 404);
+
+    const readings = await c.env.DB.prepare(
+        `
+        SELECT id, electricity, recorded_at
+        FROM readings
+        WHERE room_id = ?
+          AND recorded_at >= datetime('now', ?)
+        ORDER BY recorded_at ASC
+        LIMIT ?
+    `
+    )
+        .bind(roomId, `-${days} days`, limit)
+        .all<{ electricity: number; id: number; recorded_at: string }>();
+
+    return c.json({
+        days,
+        readings: readings.results,
+        room,
+        unit: "kWh",
+    });
 });
 
 app.post("/", async c => {

@@ -37,9 +37,26 @@
                         }}</span>
                     </template>
                 </el-table-column>
-                <el-table-column prop="last_electricity" label="电量 (kWh)">
+                <el-table-column prop="last_electricity" label="电量 (kWh)" width="150">
                     <template #default="scope">
-                        {{ scope.row.last_electricity ?? '-' }}
+                        <div class="electricity-cell">
+                            <span>{{ scope.row.last_electricity ?? '-' }}</span>
+                            <el-tooltip content="查看统计" placement="top">
+                                <button
+                                    aria-label="查看电量统计"
+                                    class="stats-btn"
+                                    title="查看电量统计"
+                                    type="button"
+                                    @click="openRoomStats(scope.row)"
+                                >
+                                    <svg class="stats-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                        <path d="M4 19V5" />
+                                        <path d="M4 19H20" />
+                                        <path d="M7.5 15.5L11.2 11.8L14.2 14.4L19 8.5" />
+                                    </svg>
+                                </button>
+                            </el-tooltip>
+                        </div>
                     </template>
                 </el-table-column>
                 <el-table-column prop="notification_threshold" label="阈值">
@@ -747,6 +764,10 @@ const openTutorialsPage = () => {
     router.push('/tutorials');
 };
 
+const openRoomStats = (room: Room) => {
+    router.push({ name: 'room-stats', params: { id: room.id } });
+};
+
 const resetQueryKeyDialog = () => {
     queryKeyLoading.value = false;
     queryKeyRoomIds.value = [];
@@ -1109,7 +1130,7 @@ const getStatusLabel = (row: Room) => {
 };
 
 const getStatusType = (row: Room) => {
-    if (isQuerying(row)) return ''; // Default/Primary color for querying
+    if (isQuerying(row)) return 'primary';
     if (row.last_query_status === 'success') return 'success';
     if (row.last_query_status === 'failed') return 'danger';
     return 'info';
@@ -1583,6 +1604,52 @@ onUnmounted(() => {
 
 .notify-switch-row :deep(.el-button + .el-button) {
     margin-left: 0;
+}
+
+.electricity-cell {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 8px;
+    min-width: 96px;
+    color: var(--el-text-color-primary);
+    font-feature-settings: 'tnum';
+}
+
+.electricity-cell > span {
+    line-height: 22px;
+}
+
+.stats-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: inherit;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    flex: 0 0 auto;
+    opacity: 1;
+    transform: translateY(-1.5px);
+    transition: opacity 0.2s ease;
+}
+
+.stats-btn:hover {
+    color: inherit;
+    opacity: 0.72;
+}
+
+.stats-icon {
+    width: 21px;
+    height: 21px;
+    fill: none;
+    opacity: 0.68;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
 }
 
 .notify-collapse :deep(.el-collapse-item__header),

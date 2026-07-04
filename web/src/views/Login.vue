@@ -149,10 +149,10 @@ const handleLogin = async () => {
 
 :global(html.dark) :deep(.input-field .el-input__wrapper) {
     background-color: var(--el-input-bg-color);
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
-border-radius: 8px;
-transition: all 0.3s ease;
-box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 
 :deep(.input-field .el-input__wrapper:hover) {
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);

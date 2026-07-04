@@ -2,11 +2,12 @@
     <el-container class="tutorials-page">
         <el-header class="tutorials-header">
             <div class="header-inner">
-                <RouterLink class="back-link" to="/">
-                    <span aria-hidden="true">←</span>
-                    返回仪表盘
-                </RouterLink>
-                <h1>TJUEcard 通知教程</h1>
+                <div class="title-group">
+                    <RouterLink v-slot="{ navigate }" custom to="/">
+                        <el-button :icon="ArrowLeft" circle class="nav-btn" aria-label="返回仪表盘" @click="navigate" />
+                    </RouterLink>
+                    <h1>TJUEcard 通知教程</h1>
+                </div>
             </div>
         </el-header>
 
@@ -365,6 +366,7 @@
 
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
+import { ArrowLeft } from '@element-plus/icons-vue';
 
 const tutorialSections = [
     { id: 'dingtalk-webhook', label: '钉钉群机器人' },
@@ -445,17 +447,22 @@ onBeforeUnmount(() => {
     padding: 22px 0 26px;
 }
 
-.back-link {
-    display: inline-flex;
+.title-group {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    color: rgba(255, 255, 255, 0.9);
-    text-decoration: none;
-    font-size: 14px;
-    margin-bottom: 12px;
+    gap: 14px;
 }
 
-.back-link:hover {
+.nav-btn {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.42);
+    color: #fff;
+    flex: 0 0 auto;
+}
+
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: #fff;
     color: #fff;
 }
 
@@ -463,7 +470,7 @@ onBeforeUnmount(() => {
     color: #fff;
     font-size: 30px;
     line-height: 1.2;
-    margin: 0 0 8px;
+    margin: 0;
     font-weight: 700;
 }
 
@@ -652,6 +659,10 @@ html.dark .tutorial-nav {
     .header-inner {
         width: min(100% - 24px, 960px);
         padding: 18px 0 22px;
+    }
+
+    .title-group {
+        gap: 10px;
     }
 
     .header-inner h1 {
