@@ -81,16 +81,16 @@
                             <line x1="54" y1="24" x2="54" y2="252" class="axis-line" />
                             <line x1="54" y1="252" x2="696" y2="252" class="axis-line" />
                             <polyline :points="linePointString" class="line-path" />
-                            <circle
+                            <g
                                 v-for="point in linePoints"
                                 :key="`${point.x}-${point.y}-${point.label}`"
-                                :cx="point.x"
-                                :cy="point.y"
-                                r="4"
-                                class="line-dot"
+                                class="line-point"
+                                @mousemove="showReadingTooltip($event, point)"
+                                @mouseleave="hideChartTooltip"
                             >
-                                <title>{{ point.label }}：{{ point.value }} kWh</title>
-                            </circle>
+                                <circle :cx="point.x" :cy="point.y" r="11" class="line-hit-area" />
+                                <circle :cx="point.x" :cy="point.y" r="4" class="line-dot" />
+                            </g>
                             <text x="54" y="278" class="axis-label">{{ firstReadingLabel }}</text>
                             <text x="696" y="278" class="axis-label axis-label-end">{{ lastReadingLabel }}</text>
                             <text x="16" y="32" class="axis-label">{{ formatNumber(maxElectricity) }}</text>
@@ -118,9 +118,9 @@
                                 :height="bar.height"
                                 rx="3"
                                 class="usage-bar"
-                            >
-                                <title>{{ bar.date }}：{{ formatNumber(bar.value) }} kWh</title>
-                            </rect>
+                                @mousemove="showUsageTooltip($event, bar)"
+                                @mouseleave="hideChartTooltip"
+                            />
                             <text x="54" y="278" class="axis-label">{{ firstUsageLabel }}</text>
                             <text x="696" y="278" class="axis-label axis-label-end">{{ lastUsageLabel }}</text>
                             <text x="16" y="32" class="axis-label">{{ formatNumber(maxDailyUsage) }}</text>
@@ -144,6 +144,17 @@
                 </section>
             </template>
         </el-main>
+        <div
+            v-if="chartTooltip.visible"
+            class="chart-tooltip"
+            :style="{ left: `${chartTooltip.x}px`, top: `${chartTooltip.y}px` }"
+        >
+            <strong>{{ chartTooltip.title }}</strong>
+            <div v-for="row in chartTooltip.rows" :key="row.label" class="tooltip-row">
+                <span>{{ row.label }}</span>
+                <b>{{ row.value }}</b>
+            </div>
+        </div>
     </el-container>
 </template>
 
@@ -176,6 +187,11 @@ type UsageInterval = {
     usage: number;
 };
 
+type ChartTooltipRow = {
+    label: string;
+    value: string;
+};
+
 const route = useRoute();
 const router = useRouter();
 const loading = ref(false);
@@ -183,6 +199,13 @@ const errorMessage = ref('');
 const days = ref(30);
 const room = ref<RoomMeta | null>(null);
 const readings = ref<Reading[]>([]);
+const chartTooltip = ref({
+    rows: [] as ChartTooltipRow[],
+    title: '',
+    visible: false,
+    x: 0,
+    y: 0,
+});
 
 const parseUtcDate = (dateStr: string) => new Date(dateStr.replace(' ', 'T') + 'Z');
 
@@ -207,6 +230,35 @@ const formatDateKey = (dateStr: string) => {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${month}-${day}`;
+};
+
+const getTooltipPosition = (event: MouseEvent) => ({
+    x: Math.max(12, Math.min(event.clientX + 14, window.innerWidth - 190)),
+    y: Math.max(12, Math.min(event.clientY + 14, window.innerHeight - 110)),
+});
+
+const showReadingTooltip = (event: MouseEvent, point: { label: string; value: number }) => {
+    const position = getTooltipPosition(event);
+    chartTooltip.value = {
+        visible: true,
+        ...position,
+        rows: [{ label: '剩余电量', value: `${formatNumber(point.value)} kWh` }],
+        title: point.label,
+    };
+};
+
+const showUsageTooltip = (event: MouseEvent, bar: { date: string; value: number }) => {
+    const position = getTooltipPosition(event);
+    chartTooltip.value = {
+        visible: true,
+        ...position,
+        rows: [{ label: '估算用量', value: `${formatNumber(bar.value)} kWh` }],
+        title: bar.date,
+    };
+};
+
+const hideChartTooltip = () => {
+    chartTooltip.value.visible = false;
 };
 
 const roomTitle = computed(() => {
@@ -547,12 +599,76 @@ onMounted(fetchStats);
 
 .line-dot {
     fill: #fff;
+    pointer-events: none;
     stroke: #409eff;
     stroke-width: 2;
+    transform-box: fill-box;
+    transform-origin: center;
+    transition:
+        transform 0.16s ease,
+        stroke-width 0.16s ease;
+}
+
+.line-point:hover .line-dot {
+    stroke-width: 2.4;
+    transform: scale(1.55);
+}
+
+.line-hit-area {
+    fill: transparent;
+    cursor: pointer;
+    pointer-events: all;
 }
 
 .usage-bar {
+    cursor: pointer;
     fill: #67c23a;
+    transform-box: fill-box;
+    transform-origin: center bottom;
+    transition:
+        filter 0.16s ease,
+        transform 0.16s ease;
+}
+
+.usage-bar:hover {
+    filter: drop-shadow(0 5px 8px rgba(103, 194, 58, 0.22));
+    transform: scale(1.04, 1.06);
+}
+
+.chart-tooltip {
+    position: fixed;
+    z-index: 3000;
+    min-width: 150px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(31, 41, 55, 0.94);
+    color: #fff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.22);
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.chart-tooltip strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.tooltip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    line-height: 1.7;
+}
+
+.tooltip-row span {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.tooltip-row b {
+    color: #fff;
+    font-weight: 700;
 }
 
 .history-table {
