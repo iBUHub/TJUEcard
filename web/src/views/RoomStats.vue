@@ -13,7 +13,6 @@
                     <el-select v-model="days" class="range-select" @change="fetchStats">
                         <el-option label="近 7 天" :value="7" />
                         <el-option label="近 30 天" :value="30" />
-                        <el-option label="近 90 天" :value="90" />
                     </el-select>
                     <el-button :icon="Refresh" circle class="nav-btn" :loading="loading" @click="fetchStats" />
                 </div>
@@ -139,7 +138,56 @@
                         <el-table-column prop="time" label="时间" min-width="150" />
                         <el-table-column prop="electricity" label="剩余电量 (kWh)" min-width="130" />
                         <el-table-column prop="usage" label="本段消耗 (kWh)" min-width="130" />
-                        <el-table-column prop="note" label="备注" min-width="120" />
+                        <el-table-column label="备注" min-width="220">
+                            <template #default="{ row }">
+                                <div v-if="row.rechargeAmount !== null" class="recharge-cell">
+                                    <template v-if="editingRechargeReadingId === row.readingId">
+                                        <el-input-number
+                                            v-model="editingRechargeAmount"
+                                            :controls="false"
+                                            :min="0"
+                                            :precision="0"
+                                            :step="10"
+                                            class="recharge-input"
+                                            size="small"
+                                        />
+                                        <span class="recharge-unit">元</span>
+                                        <el-button
+                                            :icon="Check"
+                                            aria-label="保存充值金额"
+                                            circle
+                                            class="recharge-action"
+                                            size="small"
+                                            type="primary"
+                                            @click="saveRechargeAmount(row.readingId)"
+                                        />
+                                        <el-button
+                                            :icon="Close"
+                                            aria-label="取消修改"
+                                            circle
+                                            class="recharge-action"
+                                            size="small"
+                                            @click="cancelRechargeEdit"
+                                        />
+                                    </template>
+                                    <template v-else>
+                                        <span>
+                                            {{ row.isRechargeAmountEdited ? '充值' : '可能充值' }}
+                                            {{ formatCurrencyAmount(row.rechargeAmount) }} 元
+                                        </span>
+                                        <el-button
+                                            :icon="EditPen"
+                                            aria-label="修改充值金额"
+                                            circle
+                                            class="recharge-action"
+                                            size="small"
+                                            text
+                                            @click="startRechargeEdit(row.readingId, row.rechargeAmount)"
+                                        />
+                                    </template>
+                                </div>
+                            </template>
+                        </el-table-column>
                     </el-table>
                 </section>
             </template>
@@ -161,7 +209,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ArrowLeft, DataLine, Lightning, Odometer, Refresh, Tickets } from '@element-plus/icons-vue';
+import {
+    ArrowLeft,
+    Check,
+    Close,
+    DataLine,
+    EditPen,
+    Lightning,
+    Odometer,
+    Refresh,
+    Tickets,
+} from '@element-plus/icons-vue';
 import api from '../api';
 
 type Reading = {
@@ -184,6 +242,7 @@ type UsageInterval = {
     current: Reading;
     previous: Reading;
     recharge: number;
+    rechargeAmount: number | null;
     usage: number;
 };
 
@@ -199,6 +258,9 @@ const errorMessage = ref('');
 const days = ref(30);
 const room = ref<RoomMeta | null>(null);
 const readings = ref<Reading[]>([]);
+const rechargeAmountOverrides = ref<Record<number, number>>({});
+const editingRechargeReadingId = ref<number | null>(null);
+const editingRechargeAmount = ref<number | null>(null);
 const chartTooltip = ref({
     rows: [] as ChartTooltipRow[],
     title: '',
@@ -206,12 +268,24 @@ const chartTooltip = ref({
     x: 0,
     y: 0,
 });
+const ELECTRICITY_PRICE = 0.49;
+const RECHARGE_AMOUNT_STEP = 10;
 
 const parseUtcDate = (dateStr: string) => new Date(dateStr.replace(' ', 'T') + 'Z');
 
 const formatNumber = (value: number | null | undefined) => {
     if (value === null || value === undefined || !Number.isFinite(value)) return '-';
     return Number(value).toFixed(1);
+};
+
+const formatPreciseNumber = (value: number | null | undefined) => {
+    if (value === null || value === undefined || !Number.isFinite(value)) return '-';
+    return Number(value).toFixed(2);
+};
+
+const formatCurrencyAmount = (value: number | null | undefined) => {
+    if (value === null || value === undefined || !Number.isFinite(value)) return '-';
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
 };
 
 const formatDateTime = (dateStr: string) => {
@@ -270,15 +344,92 @@ const currentElectricity = computed(
     () => room.value?.last_electricity ?? readings.value[readings.value.length - 1]?.electricity ?? null
 );
 
+const estimateRecharge = (observedIncrease: number) => {
+    const minimumAmount = Math.max(observedIncrease * ELECTRICITY_PRICE, RECHARGE_AMOUNT_STEP);
+    const rechargeAmount = Math.ceil((minimumAmount - 0.01) / RECHARGE_AMOUNT_STEP) * RECHARGE_AMOUNT_STEP;
+
+    return {
+        amount: rechargeAmount,
+        electricity: rechargeAmount / ELECTRICITY_PRICE,
+    };
+};
+
+const getRechargeOverrideStorageKey = () => {
+    const id = Number(route.params.id);
+    return Number.isInteger(id) && id > 0 ? `tjuecard:room:${id}:recharge-overrides` : '';
+};
+
+const loadRechargeAmountOverrides = () => {
+    const key = getRechargeOverrideStorageKey();
+    if (!key || typeof window === 'undefined') return;
+
+    try {
+        const raw = window.localStorage.getItem(key);
+        const parsed = raw ? JSON.parse(raw) : {};
+        rechargeAmountOverrides.value =
+            parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+                ? Object.fromEntries(
+                      Object.entries(parsed)
+                          .map(([readingId, amount]) => [Number(readingId), Number(amount)])
+                          .filter(([readingId, amount]) => Number.isInteger(readingId) && Number.isFinite(amount))
+                  )
+                : {};
+    } catch {
+        rechargeAmountOverrides.value = {};
+    }
+};
+
+const saveRechargeAmountOverrides = () => {
+    const key = getRechargeOverrideStorageKey();
+    if (!key || typeof window === 'undefined') return;
+    window.localStorage.setItem(key, JSON.stringify(rechargeAmountOverrides.value));
+};
+
+const startRechargeEdit = (readingId: number, amount: number) => {
+    editingRechargeReadingId.value = readingId;
+    editingRechargeAmount.value = amount;
+};
+
+const cancelRechargeEdit = () => {
+    editingRechargeReadingId.value = null;
+    editingRechargeAmount.value = null;
+};
+
+const saveRechargeAmount = (readingId: number) => {
+    const amount = Number(editingRechargeAmount.value);
+    if (!Number.isFinite(amount) || amount < 0) return;
+
+    rechargeAmountOverrides.value = {
+        ...rechargeAmountOverrides.value,
+        [readingId]: amount,
+    };
+    saveRechargeAmountOverrides();
+    cancelRechargeEdit();
+};
+
 const usageIntervals = computed<UsageInterval[]>(() => {
     const sorted = readings.value;
     return sorted.slice(1).map((current, index) => {
         const previous = sorted[index];
         const diff = previous.electricity - current.electricity;
+        if (diff < 0) {
+            const estimatedRecharge = estimateRecharge(Math.abs(diff));
+            const rechargeAmount = rechargeAmountOverrides.value[current.id] ?? estimatedRecharge.amount;
+            const rechargeElectricity = rechargeAmount / ELECTRICITY_PRICE;
+            return {
+                current,
+                previous,
+                recharge: rechargeElectricity,
+                rechargeAmount,
+                usage: Math.max(previous.electricity + rechargeElectricity - current.electricity, 0),
+            };
+        }
+
         return {
             current,
             previous,
-            recharge: diff < 0 ? Math.abs(diff) : 0,
+            recharge: 0,
+            rechargeAmount: null,
             usage: diff > 0 ? diff : 0,
         };
     });
@@ -320,9 +471,13 @@ const linePointString = computed(() => linePoints.value.map(point => `${point.x}
 
 const dailyUsage = computed(() => {
     const groups = new Map<string, number>();
-    usageIntervals.value.forEach(interval => {
+    usageIntervals.value.forEach((interval, index) => {
         if (interval.usage <= 0) return;
-        const key = formatDateKey(interval.current.recorded_at);
+        const nextInterval = usageIntervals.value[index + 1];
+        const key =
+            interval.recharge > 0 && nextInterval
+                ? formatDateKey(nextInterval.current.recorded_at)
+                : formatDateKey(interval.current.recorded_at);
         groups.set(key, (groups.get(key) || 0) + interval.usage);
     });
     return [...groups.entries()].map(([date, value]) => ({ date, value }));
@@ -359,9 +514,18 @@ const historyRows = computed(() =>
     readings.value
         .map((reading, index) => {
             const interval = index === 0 ? null : usageIntervals.value[index - 1];
+            const rechargeText =
+                interval?.recharge && interval.rechargeAmount
+                    ? `可能充值 ${formatCurrencyAmount(interval.rechargeAmount)} 元（+${formatPreciseNumber(interval.recharge)} kWh）`
+                    : interval?.recharge
+                      ? `可能充值 +${formatPreciseNumber(interval.recharge)} kWh`
+                      : '';
             return {
                 electricity: formatNumber(reading.electricity),
-                note: interval?.recharge ? `可能充值 +${formatNumber(interval.recharge)}` : '',
+                isRechargeAmountEdited: interval ? rechargeAmountOverrides.value[reading.id] !== undefined : false,
+                note: rechargeText,
+                readingId: reading.id,
+                rechargeAmount: interval?.rechargeAmount ?? null,
                 time: formatDateTime(reading.recorded_at),
                 usage: interval ? (interval.usage > 0 ? formatNumber(interval.usage) : '-') : '-',
             };
@@ -384,6 +548,8 @@ const fetchStats = async () => {
         });
         room.value = res.data.room;
         readings.value = Array.isArray(res.data.readings) ? res.data.readings : [];
+        loadRechargeAmountOverrides();
+        cancelRechargeEdit();
     } catch {
         errorMessage.value = '读取电量统计失败';
     } finally {
@@ -673,6 +839,27 @@ onMounted(fetchStats);
 
 .history-table {
     width: 100%;
+}
+
+.recharge-cell {
+    min-height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--el-text-color-regular);
+}
+
+.recharge-input {
+    width: 86px;
+}
+
+.recharge-unit {
+    color: var(--el-text-color-secondary);
+    font-size: 13px;
+}
+
+.recharge-action {
+    flex: 0 0 auto;
 }
 
 .empty-state {
