@@ -16,6 +16,48 @@ function clampQueryNumber(value: string | undefined, fallback: number, min: numb
     return Math.min(Math.max(Math.floor(parsed), min), max);
 }
 
+async function getUserRoom(
+    db: D1Database,
+    userId: number,
+    roomId: number
+): Promise<{
+    alias_name: string | null;
+    full_name: string | null;
+    id: number;
+    last_electricity: number | null;
+    last_query_status: string | null;
+    last_query_time: string | null;
+    room_id: string;
+} | null> {
+    return db
+        .prepare(
+            `
+        SELECT
+            r.id,
+            r.full_name,
+            r.last_electricity,
+            r.last_query_status,
+            r.last_query_time,
+            r.room_id,
+            s.alias_name
+        FROM subscriptions s
+        JOIN rooms r ON s.room_id = r.id
+        WHERE s.user_id = ?
+          AND s.room_id = ?
+    `
+        )
+        .bind(userId, roomId)
+        .first<{
+            alias_name: string | null;
+            full_name: string | null;
+            id: number;
+            last_electricity: number | null;
+            last_query_status: string | null;
+            last_query_time: string | null;
+            room_id: string;
+        }>();
+}
+
 app.get("/", async c => {
     const user = c.get("user");
     const rooms = await c.env.DB.prepare(
@@ -39,53 +81,74 @@ app.get("/:id/readings", async c => {
     const days = clampQueryNumber(c.req.query("days"), DEFAULT_HISTORY_DAYS, 1, MAX_HISTORY_DAYS);
     const limit = clampQueryNumber(c.req.query("limit"), 500, 1, MAX_HISTORY_LIMIT);
 
-    const room = await c.env.DB.prepare(
-        `
-        SELECT
-            r.id,
-            r.full_name,
-            r.last_electricity,
-            r.last_query_status,
-            r.last_query_time,
-            r.room_id,
-            s.alias_name
-        FROM subscriptions s
-        JOIN rooms r ON s.room_id = r.id
-        WHERE s.user_id = ?
-          AND s.room_id = ?
-    `
-    )
-        .bind(user.id, roomId)
-        .first<{
-            alias_name: string | null;
-            full_name: string | null;
-            id: number;
-            last_electricity: number | null;
-            last_query_status: string | null;
-            last_query_time: string | null;
-            room_id: string;
-        }>();
+    const room = await getUserRoom(c.env.DB, user.id, roomId);
 
     if (!room) return c.json({ error: "房间不存在或未订阅" }, 404);
 
     const readings = await c.env.DB.prepare(
         `
-        SELECT id, electricity, recorded_at
-        FROM readings
-        WHERE room_id = ?
-          AND recorded_at >= datetime('now', ?)
-        ORDER BY recorded_at ASC
+        SELECT
+            r.id,
+            r.electricity,
+            r.recorded_at,
+            ra.amount_cents AS recharge_amount_cents
+        FROM readings r
+        LEFT JOIN recharge_adjustments ra
+          ON ra.room_id = r.room_id
+         AND ra.reading_id = r.id
+        WHERE r.room_id = ?
+          AND r.recorded_at >= datetime('now', ?)
+        ORDER BY r.recorded_at ASC
         LIMIT ?
     `
     )
         .bind(roomId, `-${days} days`, limit)
-        .all<{ electricity: number; id: number; recorded_at: string }>();
+        .all<{ electricity: number; id: number; recorded_at: string; recharge_amount_cents: number | null }>();
 
     return c.json({
         days,
         readings: readings.results,
         room,
         unit: "kWh",
+    });
+});
+
+app.put("/:id/readings/:readingId/recharge-adjustment", async c => {
+    const user = c.get("user");
+    const roomId = Number(c.req.param("id"));
+    const readingId = Number(c.req.param("readingId"));
+    if (!Number.isInteger(roomId) || roomId <= 0) return c.json({ error: "房间 ID 无效" }, 400);
+    if (!Number.isInteger(readingId) || readingId <= 0) return c.json({ error: "读数 ID 无效" }, 400);
+
+    const room = await getUserRoom(c.env.DB, user.id, roomId);
+    if (!room) return c.json({ error: "房间不存在或未订阅" }, 404);
+
+    const { amount_yuan } = await c.req.json();
+    const amountYuan = Number(amount_yuan);
+    if (!Number.isFinite(amountYuan) || amountYuan < 0) return c.json({ error: "充值金额无效" }, 400);
+
+    const reading = await c.env.DB.prepare("SELECT id FROM readings WHERE id = ? AND room_id = ?")
+        .bind(readingId, roomId)
+        .first<{ id: number }>();
+    if (!reading) return c.json({ error: "读数不存在" }, 404);
+
+    const amountCents = Math.round(amountYuan * 100);
+    await c.env.DB.prepare(
+        `
+        INSERT INTO recharge_adjustments (room_id, reading_id, amount_cents, updated_at)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(room_id, reading_id) DO UPDATE SET
+            amount_cents = excluded.amount_cents,
+            updated_at = CURRENT_TIMESTAMP
+    `
+    )
+        .bind(roomId, readingId, amountCents)
+        .run();
+
+    return c.json({
+        amount_cents: amountCents,
+        amount_yuan: amountCents / 100,
+        reading_id: readingId,
     });
 });
 

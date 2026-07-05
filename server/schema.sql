@@ -72,7 +72,21 @@ CREATE TABLE IF NOT EXISTS readings (
 
 CREATE INDEX IF NOT EXISTS idx_readings_room_time ON readings(room_id, recorded_at);
 
--- 5. Agents Table
+-- 5. Recharge Adjustments
+CREATE TABLE IF NOT EXISTS recharge_adjustments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id INTEGER NOT NULL,
+    reading_id INTEGER NOT NULL,
+    amount_cents INTEGER NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE CASCADE,
+    FOREIGN KEY (reading_id) REFERENCES readings(id) ON DELETE CASCADE,
+    UNIQUE(room_id, reading_id)
+);
+
+-- 6. Agents Table
 CREATE TABLE IF NOT EXISTS agents (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     uuid TEXT UNIQUE NOT NULL,
@@ -84,7 +98,7 @@ CREATE TABLE IF NOT EXISTS agents (
 
 CREATE INDEX IF NOT EXISTS idx_agents_uuid ON agents(uuid);
 
--- 6. Email Verification Codes Table
+-- 7. Email Verification Codes Table
 CREATE TABLE IF NOT EXISTS email_verifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL,
@@ -95,7 +109,7 @@ CREATE TABLE IF NOT EXISTS email_verifications (
 
 CREATE INDEX IF NOT EXISTS idx_email_verifications_email ON email_verifications(email);
 
--- 7. WeChat Test Account Config (per user)
+-- 8. WeChat Test Account Config (per user)
 -- Each TJUEcard user can bind at most one WeChat test account.
 CREATE TABLE IF NOT EXISTS wechat_test_accounts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,7 +132,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_wechat_test_accounts_user_id ON wechat_tes
 -- Extra safety for existing local SQLite databases created before UNIQUE(app_id) was added.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_wechat_test_accounts_app_id ON wechat_test_accounts(app_id);
 
--- 8. WeChat Followers (openid cache synced from WeChat APIs)
+-- 9. WeChat Followers (openid cache synced from WeChat APIs)
 CREATE TABLE IF NOT EXISTS wechat_followers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,

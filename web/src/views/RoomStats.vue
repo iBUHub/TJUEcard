@@ -226,6 +226,7 @@ type Reading = {
     electricity: number;
     id: number;
     recorded_at: string;
+    recharge_amount_cents: number | null;
 };
 
 type RoomMeta = {
@@ -258,7 +259,6 @@ const errorMessage = ref('');
 const days = ref(30);
 const room = ref<RoomMeta | null>(null);
 const readings = ref<Reading[]>([]);
-const rechargeAmountOverrides = ref<Record<number, number>>({});
 const editingRechargeReadingId = ref<number | null>(null);
 const editingRechargeAmount = ref<number | null>(null);
 const chartTooltip = ref({
@@ -354,37 +354,6 @@ const estimateRecharge = (observedIncrease: number) => {
     };
 };
 
-const getRechargeOverrideStorageKey = () => {
-    const id = Number(route.params.id);
-    return Number.isInteger(id) && id > 0 ? `tjuecard:room:${id}:recharge-overrides` : '';
-};
-
-const loadRechargeAmountOverrides = () => {
-    const key = getRechargeOverrideStorageKey();
-    if (!key || typeof window === 'undefined') return;
-
-    try {
-        const raw = window.localStorage.getItem(key);
-        const parsed = raw ? JSON.parse(raw) : {};
-        rechargeAmountOverrides.value =
-            parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-                ? Object.fromEntries(
-                      Object.entries(parsed)
-                          .map(([readingId, amount]) => [Number(readingId), Number(amount)])
-                          .filter(([readingId, amount]) => Number.isInteger(readingId) && Number.isFinite(amount))
-                  )
-                : {};
-    } catch {
-        rechargeAmountOverrides.value = {};
-    }
-};
-
-const saveRechargeAmountOverrides = () => {
-    const key = getRechargeOverrideStorageKey();
-    if (!key || typeof window === 'undefined') return;
-    window.localStorage.setItem(key, JSON.stringify(rechargeAmountOverrides.value));
-};
-
 const startRechargeEdit = (readingId: number, amount: number) => {
     editingRechargeReadingId.value = readingId;
     editingRechargeAmount.value = amount;
@@ -395,15 +364,18 @@ const cancelRechargeEdit = () => {
     editingRechargeAmount.value = null;
 };
 
-const saveRechargeAmount = (readingId: number) => {
+const saveRechargeAmount = async (readingId: number) => {
+    const id = Number(route.params.id);
     const amount = Number(editingRechargeAmount.value);
-    if (!Number.isFinite(amount) || amount < 0) return;
+    if (!Number.isInteger(id) || id <= 0 || !Number.isFinite(amount) || amount < 0) return;
 
-    rechargeAmountOverrides.value = {
-        ...rechargeAmountOverrides.value,
-        [readingId]: amount,
-    };
-    saveRechargeAmountOverrides();
+    const res = await api.put(`/rooms/${id}/readings/${readingId}/recharge-adjustment`, {
+        amount_yuan: amount,
+    });
+    const amountCents = Number(res.data.amount_cents);
+    readings.value = readings.value.map(reading =>
+        reading.id === readingId ? { ...reading, recharge_amount_cents: amountCents } : reading
+    );
     cancelRechargeEdit();
 };
 
@@ -414,7 +386,8 @@ const usageIntervals = computed<UsageInterval[]>(() => {
         const diff = previous.electricity - current.electricity;
         if (diff < 0) {
             const estimatedRecharge = estimateRecharge(Math.abs(diff));
-            const rechargeAmount = rechargeAmountOverrides.value[current.id] ?? estimatedRecharge.amount;
+            const rechargeAmount =
+                current.recharge_amount_cents === null ? estimatedRecharge.amount : current.recharge_amount_cents / 100;
             const rechargeElectricity = rechargeAmount / ELECTRICITY_PRICE;
             return {
                 current,
@@ -522,7 +495,7 @@ const historyRows = computed(() =>
                       : '';
             return {
                 electricity: formatNumber(reading.electricity),
-                isRechargeAmountEdited: interval ? rechargeAmountOverrides.value[reading.id] !== undefined : false,
+                isRechargeAmountEdited: interval ? reading.recharge_amount_cents !== null : false,
                 note: rechargeText,
                 readingId: reading.id,
                 rechargeAmount: interval?.rechargeAmount ?? null,
@@ -548,7 +521,6 @@ const fetchStats = async () => {
         });
         room.value = res.data.room;
         readings.value = Array.isArray(res.data.readings) ? res.data.readings : [];
-        loadRechargeAmountOverrides();
         cancelRechargeEdit();
     } catch {
         errorMessage.value = '读取电量统计失败';
