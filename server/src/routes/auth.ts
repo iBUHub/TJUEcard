@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { sign } from "hono/jwt";
 import { hashSync, compareSync } from "bcryptjs";
 import { Bindings, Variables } from "../types";
+import { sendEmail } from "../email";
 
 const auth = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -68,40 +69,6 @@ function generateVerificationEmailHtml(code: string, type: "register" | "reset" 
     </table>
 </body>
 </html>`;
-}
-
-/**
- * Send email notification via SendCloud API
- */
-async function sendEmail(env: Bindings, to: string, subject: string, html: string): Promise<boolean> {
-    if (!env.SEND_CLOUD_API_USER || !env.SEND_CLOUD_API_KEY) {
-        console.warn("[SendCloud] API credentials not configured, skipping email");
-        return false;
-    }
-
-    const params = new URLSearchParams({
-        apiKey: env.SEND_CLOUD_API_KEY,
-        apiUser: env.SEND_CLOUD_API_USER,
-        from: env.SEND_CLOUD_FROM_EMAIL || "noreply@tjuecard.ibuhub.com",
-        fromName: "TJUEcard",
-        html,
-        subject,
-        to,
-    });
-
-    try {
-        const response = await fetch("https://api2.sendcloud.net/api/mail/send", {
-            body: params.toString(),
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            method: "POST",
-        });
-        const result = (await response.json()) as { result?: boolean; message?: string };
-        console.log(`[SendCloud] Email to ${to}: ${JSON.stringify(result)}`);
-        return result.result === true;
-    } catch (error) {
-        console.error(`[SendCloud] Failed to send email to ${to}:`, error);
-        return false;
-    }
 }
 
 /**

@@ -47,12 +47,10 @@
 
      <img width="1000" alt="image" src="https://github.com/user-attachments/assets/79d33851-7804-46ed-9489-dbaed32d6c53" />
 
-
 3. **设置阈值**
    在房间列表中，您可以为每个房间设定「电费报警阈值」，我们的 Agent 会定期查询电费。当查询到的剩余电量低于该值时，系统将会向您注册的邮箱发送提醒通知。
 
    <img width="1000" alt="image" src="https://github.com/user-attachments/assets/83f8bd9b-52d0-4e72-ab95-784337b420b8" />
-
 
 4. **配置钉钉通知（可选）**
    TJUEcard 支持钉钉群机器人通知。你可以在「通知设置」中填写钉钉机器人 Webhook 并开启钉钉通知。详细教程见：
@@ -83,6 +81,7 @@ cp .env.example .env
 - **密钥生成**：`JWT_SECRET` 和 `AGENT_SECRET` 可以随机生成长字符串（如：`openssl rand -hex 32`）。
 - **Agent 配置**：填写 `TJU_USERNAME` 和 `TJU_PASSWORD` 以便 Agent 能够模拟登录查询。
 - **本地调试**：设置 `SKIP_EMAIL_VERIFICATION=true` 可以在注册时跳过真实的邮件验证码。
+- **邮件服务**：默认使用原 SendCloud；设置 `EMAIL_PROVIDER=resend` 并配置 `RESEND_API_KEY` 后使用 Resend。
 
 ### 2. 一键启动 (推荐)
 

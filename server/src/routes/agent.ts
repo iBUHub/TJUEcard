@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { Context } from "hono";
 import { Bindings, Variables } from "../types";
+import { getEmailTestRecipient, sendEmail, sendEmailDetailed } from "../email";
 import { sendWeChatLowElectricityNotification } from "../wechat/client";
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
@@ -81,40 +82,6 @@ function generateEmailHtml(aliasName: string, fullName: string | null, electric:
 </html>`;
 }
 
-/**
- * Send email notification via SendCloud API
- */
-async function sendEmail(env: Bindings, to: string, subject: string, html: string): Promise<boolean> {
-    if (!env.SEND_CLOUD_API_USER || !env.SEND_CLOUD_API_KEY) {
-        console.warn("[SendCloud] API credentials not configured, skipping email");
-        return false;
-    }
-
-    const params = new URLSearchParams({
-        apiKey: env.SEND_CLOUD_API_KEY,
-        apiUser: env.SEND_CLOUD_API_USER,
-        from: env.SEND_CLOUD_FROM_EMAIL || "noreply@tjuecard.ibuhub.com",
-        fromName: "TJUEcard",
-        html,
-        subject,
-        to,
-    });
-
-    try {
-        const response = await fetch("https://api2.sendcloud.net/api/mail/send", {
-            body: params.toString(),
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            method: "POST",
-        });
-        const result = (await response.json()) as { result?: boolean; message?: string };
-        console.log(`[SendCloud] Email to ${to}: ${JSON.stringify(result)}`);
-        return result.result === true;
-    } catch (error) {
-        console.error(`[SendCloud] Failed to send email to ${to}:`, error);
-        return false;
-    }
-}
-
 async function sendDingTalkText(webhookUrl: string, content: string): Promise<boolean> {
     try {
         const resp = await fetch(webhookUrl, {
@@ -175,36 +142,25 @@ app.use("*", async (c, next) => {
 
 // Test email endpoint (returns full API response for debugging)
 app.post("/test-email", async c => {
-    const testEmail = c.env.SEND_CLOUD_TEST_EMAIL || "hello@ibuhub.com";
-
-    if (!c.env.SEND_CLOUD_API_USER || !c.env.SEND_CLOUD_API_KEY) {
-        return c.json({ error: "SendCloud API 凭据未配置" }, 500);
-    }
-
+    const testEmail = getEmailTestRecipient(c.env);
     const subject = "⚡ TJUEcard 邮件功能测试 (8.5度) | 房间：我的宿舍";
     const html = generateEmailHtml("我的宿舍", "天大一卡通 - 32斋 - 101", 8.5, 20);
+    const result = await sendEmailDetailed(c.env, testEmail, subject, html);
 
-    const params = new URLSearchParams({
-        apiKey: c.env.SEND_CLOUD_API_KEY,
-        apiUser: c.env.SEND_CLOUD_API_USER,
-        from: c.env.SEND_CLOUD_FROM_EMAIL || "noreply@tjuecard.ibuhub.com",
-        fromName: "TJUEcard",
-        html,
-        subject,
-        to: testEmail,
-    });
-
-    try {
-        const response = await fetch("https://api2.sendcloud.net/api/mail/send", {
-            body: params.toString(),
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            method: "POST",
-        });
-        const result = await response.json();
-        return c.json({ apiResponse: result, to: testEmail });
-    } catch (error) {
-        return c.json({ error: String(error), to: testEmail }, 500);
+    if (!result.ok) {
+        return c.json(
+            {
+                apiResponse: result.data,
+                error: result.error || "邮件发送失败",
+                provider: result.provider,
+                status: result.status,
+                to: testEmail,
+            },
+            500
+        );
     }
+
+    return c.json({ apiResponse: result.data, provider: result.provider, status: result.status, to: testEmail });
 });
 
 app.post("/poll", async c => {

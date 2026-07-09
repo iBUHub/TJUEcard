@@ -13,6 +13,8 @@ NODE_ENV = "production"
 # - AGENT_SECRET
 # - SEND_CLOUD_API_USER
 # - SEND_CLOUD_API_KEY
+# - RESEND_API_KEY
+# To use Resend, add EMAIL_PROVIDER = "resend" to [vars].
 
 [[d1_databases]]
 binding = "DB"

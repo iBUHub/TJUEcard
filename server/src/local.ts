@@ -29,10 +29,12 @@ type Bindings = {
     DB: D1Adapter;
     JWT_SECRET: string;
     AGENT_SECRET: string;
+    EMAIL_PROVIDER?: string;
     SEND_CLOUD_API_USER: string;
     SEND_CLOUD_API_KEY: string;
     SEND_CLOUD_FROM_EMAIL: string;
     SEND_CLOUD_TEST_EMAIL: string;
+    RESEND_API_KEY?: string;
     SKIP_EMAIL_VERIFICATION?: string;
     NODE_ENV?: string;
 };
@@ -46,8 +48,10 @@ app.use("*", async (c, next) => {
     c.env = {
         AGENT_SECRET: process.env.AGENT_SECRET || "dev-agent-secret",
         DB: d1Adapter,
+        EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || "sendcloud",
         JWT_SECRET: process.env.JWT_SECRET || "dev-secret-key-change-in-production",
         NODE_ENV: "development",
+        RESEND_API_KEY: process.env.RESEND_API_KEY || "",
         SEND_CLOUD_API_KEY: process.env.SEND_CLOUD_API_KEY || "",
         SEND_CLOUD_API_USER: process.env.SEND_CLOUD_API_USER || "",
         SEND_CLOUD_FROM_EMAIL: process.env.SEND_CLOUD_FROM_EMAIL || "noreply@tjuecard.ibuhub.com",

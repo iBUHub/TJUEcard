@@ -83,6 +83,7 @@ Configuration key notes:
 - **Secret Generation**: `JWT_SECRET` and `AGENT_SECRET` can be randomly generated long strings (e.g., `openssl rand -hex 32`).
 - **Agent Config**: Fill in `TJU_USERNAME` and `TJU_PASSWORD` so that the Agent can simulate login for queries.
 - **Local Debugging**: Setting `SKIP_EMAIL_VERIFICATION=true` allows you to skip real email verification code validation during registration.
+- **Email Provider**: SendCloud remains the default. Set `EMAIL_PROVIDER=resend` and configure `RESEND_API_KEY` to use Resend.
 
 ### 2. One-click Start (Recommended)
 
