@@ -35,6 +35,8 @@ type Bindings = {
     SEND_CLOUD_FROM_EMAIL: string;
     SEND_CLOUD_TEST_EMAIL: string;
     RESEND_API_KEY?: string;
+    RESEND_FROM_EMAIL?: string;
+    RESEND_TEST_EMAIL?: string;
     SKIP_EMAIL_VERIFICATION?: string;
     NODE_ENV?: string;
 };
@@ -52,6 +54,8 @@ app.use("*", async (c, next) => {
         JWT_SECRET: process.env.JWT_SECRET || "dev-secret-key-change-in-production",
         NODE_ENV: "development",
         RESEND_API_KEY: process.env.RESEND_API_KEY || "",
+        RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL || "",
+        RESEND_TEST_EMAIL: process.env.RESEND_TEST_EMAIL || "",
         SEND_CLOUD_API_KEY: process.env.SEND_CLOUD_API_KEY || "",
         SEND_CLOUD_API_USER: process.env.SEND_CLOUD_API_USER || "",
         SEND_CLOUD_FROM_EMAIL: process.env.SEND_CLOUD_FROM_EMAIL || "noreply@tjuecard.ibuhub.com",

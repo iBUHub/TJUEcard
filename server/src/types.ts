@@ -14,6 +14,8 @@ export type Bindings = {
 
     // Resend Email API
     RESEND_API_KEY?: string;
+    RESEND_FROM_EMAIL?: string;
+    RESEND_TEST_EMAIL?: string;
 
     // Development options
     SKIP_EMAIL_VERIFICATION?: string; // "true" to skip email verification in dev mode

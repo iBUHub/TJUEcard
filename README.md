@@ -81,7 +81,7 @@ cp .env.example .env
 - **密钥生成**：`JWT_SECRET` 和 `AGENT_SECRET` 可以随机生成长字符串（如：`openssl rand -hex 32`）。
 - **Agent 配置**：填写 `TJU_USERNAME` 和 `TJU_PASSWORD` 以便 Agent 能够模拟登录查询。
 - **本地调试**：设置 `SKIP_EMAIL_VERIFICATION=true` 可以在注册时跳过真实的邮件验证码。
-- **邮件服务**：默认使用原 SendCloud；设置 `EMAIL_PROVIDER=resend` 并配置 `RESEND_API_KEY` 后使用 Resend。
+- **邮件服务**：默认使用原 SendCloud；设置 `EMAIL_PROVIDER=resend` 并配置 `RESEND_API_KEY` 后使用 Resend。可用 `RESEND_FROM_EMAIL`、`RESEND_TEST_EMAIL` 分别配置 Resend 发件人和测试邮件收件人。
 
 ### 2. 一键启动 (推荐)
 

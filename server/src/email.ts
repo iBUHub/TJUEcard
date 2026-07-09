@@ -24,6 +24,10 @@ function getEmailProvider(env: Bindings): EmailProvider {
 }
 
 export function getEmailTestRecipient(env: Bindings): string {
+    const provider = getEmailProvider(env);
+    if (provider === "resend") {
+        return env.RESEND_TEST_EMAIL?.trim() || env.SEND_CLOUD_TEST_EMAIL?.trim() || DEFAULT_TEST_EMAIL;
+    }
     return env.SEND_CLOUD_TEST_EMAIL?.trim() || DEFAULT_TEST_EMAIL;
 }
 
@@ -32,7 +36,7 @@ function getSendCloudFromEmail(env: Bindings): string {
 }
 
 function getResendFromEmail(env: Bindings): string {
-    const from = env.SEND_CLOUD_FROM_EMAIL?.trim() || DEFAULT_FROM_EMAIL;
+    const from = env.RESEND_FROM_EMAIL?.trim() || env.SEND_CLOUD_FROM_EMAIL?.trim() || DEFAULT_FROM_EMAIL;
     if (from.includes("<") && from.includes(">")) return from;
     return `${DEFAULT_FROM_NAME} <${from}>`;
 }
