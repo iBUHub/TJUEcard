@@ -4,19 +4,10 @@ main = "src/index.ts"
 
 [vars]
 # Non-secret environment variables
-SEND_CLOUD_FROM_EMAIL = "noreply@tjuecard.ibuhub.com"
-SEND_CLOUD_TEST_EMAIL = "hello@ibuhub.com"
+EMAIL_PROVIDER = "resend"
+NODE_ENV = "production"
 RESEND_FROM_EMAIL = "TJUEcard <noreply@ibuhub.com>"
 RESEND_TEST_EMAIL = "hello@ibuhub.com"
-NODE_ENV = "production"
-
-# Secrets (use `wrangler secret put <KEY_NAME>`):
-# - JWT_SECRET
-# - AGENT_SECRET
-# - SEND_CLOUD_API_USER
-# - SEND_CLOUD_API_KEY
-# - RESEND_API_KEY
-# To use Resend, add EMAIL_PROVIDER = "resend" to [vars].
 
 [[d1_databases]]
 binding = "DB"
